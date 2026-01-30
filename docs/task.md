@@ -1,0 +1,23 @@
+# Tasks - LASPA Data Visualization App
+
+- [x] **Project Initialization** <!-- id: 0 -->
+    - [ ] Create Next.js project with Tailwind CSS <!-- id: 1 -->
+    - [ ] Configure project structure (components, pages/app, lib) <!-- id: 2 -->
+    - [ ] Setup shadcn/ui (optional but recommended for "Premium Design") or basic Tailwind component structure <!-- id: 3 -->
+    - [ ] Install dependencies (recharts, lucide-react, etc.) <!-- id: 4 -->
+- [x] **Phase 1: Foundation & Executive Dashboard** <!-- id: 5 -->
+    - [x] Implement Layout (Sidebar, Topbar) <!-- id: 6 -->
+        - [x] Integrate LASPA Logo <!-- id: 17 -->
+    - [x] Create Executive Dashboard UI <!-- id: 7 -->
+        - [x] KPIs (Revenue, Utilization, Compliance) <!-- id: 8 -->
+        - [x] Revenue Trend Chart (Recharts) <!-- id: 9 -->
+        - [x] Parking Occupancy Heatmap (Mocked) <!-- id: 10 -->
+    - [ ] Implement Basic Auth (Mock/NextAuth) <!-- id: 11 -->
+- [x] **Data Integration (Mock/Stub)** <!-- id: 12 -->
+    - [x] Create mock data generators for dashboard <!-- id: 13 -->
+- [x] **Verification** <!-- id: 14 -->
+    - [x] Verify Responsive Design <!-- id: 15 -->
+    - [x] Verify Interactivity <!-- id: 16 -->
+- [ ] **Deployment & Git** <!-- id: 18 -->
+    - [x] Initialize Git Repository <!-- id: 19 -->
+    - [x] Push to Remote <!-- id: 20 -->
