@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  /* Lagos Metro Palette */
+  --primary: #064e3b;
+  /* Emerald 900 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #f97316;
+  /* Orange 500 */
+  --secondary-foreground: #ffffff;
+
+  --background: #f8fafc;
+  /* Slate 50 */
+  --foreground: #0f172a;
+  /* Slate 900 */
+
+  --surface: #ffffff;
+  --surface-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  /* Slate 100 */
+  --muted-foreground: #64748b;
+  /* Slate 500 */
+
+  --border: #e2e8f0;
+  /* Slate 200 */
+
+  /* Status Indicators */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* Chart Colors */
+  --chart-1: #064e3b;
+  --chart-2: #f97316;
+  --chart-3: #10b981;
+  --chart-4: #64748b;
+  --chart-5: #0f172a;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-border: var(--border);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-outfit);
+  --font-mono: var(--font-jetbrains);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  @apply antialiased;
+}
+
+/* Neo-Brutalist Utilities */
+@layer utilities {
+  .card-sharp {
+    @apply bg-surface border border-border rounded-none shadow-sm transition-all duration-200 hover:shadow-md;
+  }
+
+  .text-heading {
+    @apply font-heading tracking-tight font-bold text-foreground;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-none uppercase tracking-wider;
+  }
+}
