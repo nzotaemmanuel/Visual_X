@@ -2,6 +2,7 @@
 
 import { Bell, Search, Menu } from "lucide-react";
 import { MOCK_USER } from "@/lib/constants";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function Header() {
     return (
@@ -22,6 +23,7 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-4">
+                <ThemeToggle />
                 {/* Notifications */}
                 <button className="relative flex h-9 w-9 items-center justify-center rounded-none border border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground">
                     <Bell className="h-4 w-4" />

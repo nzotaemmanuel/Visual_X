@@ -39,6 +39,40 @@
   --chart-5: #0f172a;
 }
 
+.dark {
+  /* Lagos Metro Dark Mode */
+  --primary: #10b981;
+  /* Emerald 500 - Brighter for dark mode */
+  --primary-foreground: #022c22;
+  /* Emerald 950 */
+
+  --secondary: #fb923c;
+  /* Orange 400 */
+  --secondary-foreground: #431407;
+  /* Orange 950 */
+
+  --background: #020617;
+  /* Slate 950 */
+  --foreground: #f8fafc;
+  /* Slate 50 */
+
+  --surface: #0f172a;
+  /* Slate 900 */
+  --surface-foreground: #f8fafc;
+
+  --muted: #1e293b;
+  /* Slate 800 */
+  --muted-foreground: #94a3b8;
+  /* Slate 400 */
+
+  --border: #1e293b;
+  /* Slate 800 */
+
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+}
+
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);

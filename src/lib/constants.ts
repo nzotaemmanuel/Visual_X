@@ -61,10 +61,10 @@ export const NAV_ITEMS = [
 ];
 
 export const MOCK_USER = {
-    name: "Emmanuel Adebayo",
+    name: "Tinuoye Olabisi",
     role: "Director of Operations",
     avatar: "/avatars/emmanuel.jpg", // Placeholder
-    initials: "EA",
+    initials: "TO",
 };
 
 export const MOCK_DASHBOARD_DATA = {
