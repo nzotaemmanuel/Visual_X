@@ -61,10 +61,10 @@ export const NAV_ITEMS = [
 ];
 
 export const MOCK_USER = {
-    name: "Tinuoye Olabisi",
+    name: "Emmanuel Nzota",
     role: "Director of Operations",
     avatar: "/avatars/emmanuel.jpg", // Placeholder
-    initials: "TO",
+    initials: "EN",
 };
 
 export const MOCK_DASHBOARD_DATA = {
