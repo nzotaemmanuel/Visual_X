@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:15-3.3
+    restart: always
+    environment:
+      POSTGRES_USER: laspa_user
+      POSTGRES_PASSWORD: laspa_password_secure
+      POSTGRES_DB: laspa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

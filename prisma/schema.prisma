@@ -1,0 +1,305 @@
+generator client {
+  provider        = "prisma-client"
+  previewFeatures = ["postgresqlExtensions"]
+  output          = "./generated/prisma"
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis]
+}
+
+// Enums
+enum UserType {
+  CUSTOMER
+  ADMIN
+  PARKING_AGENT
+  ENFORCEMENT_AGENT
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum SlotStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  OUT_OF_SERVICE
+}
+
+enum TicketStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  WALLET
+  CARD
+  CASH
+  AIRTIME
+}
+
+enum ViolationStatus {
+  OUTSTANDING
+  PAID
+  APPEALED
+  WAIVED
+}
+
+enum ActionType {
+  CLAMP
+  TOW
+  IMPOUND
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  RELEASED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+enum AppealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Identity & Access Management
+model User {
+  id                  String        @id @default(uuid()) @db.Uuid
+  customerReferenceId String?       @unique @map("customer_reference_id")
+  firstName           String        @map("first_name")
+  lastName            String        @map("last_name")
+  email               String        @unique
+  phoneNumber         String        @map("phone_number")
+  userType            UserType      @default(CUSTOMER) @map("user_type")
+  accountStatus       AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  // Relationships
+  vehicles            Vehicle[]
+  tickets             ParkingTicket[] @relation("CustomerTickets")
+  agentTickets        ParkingTicket[] @relation("AgentTickets")
+  violations          CustomerViolation[] @relation("CustomerViolations")
+  officerViolations   CustomerViolation[] @relation("OfficerViolations")
+  requestedActions    EnforcementAction[]
+  reviewedAppeals     Appeal[]            @relation("ReviewerAppeals")
+  appeals             Appeal[]            @relation("UserAppeals")
+
+  @@map("users")
+}
+
+model Vehicle {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  plateNumber String   @unique @map("plate_number")
+  plateCode   String?  @map("plate_code") // e.g., "KJA"
+  plateSource String?  @map("plate_source") // e.g., "Lagos"
+  plateType   String?  @map("plate_type") // e.g., "Private"
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user       User                @relation(fields: [userId], references: [id])
+  tickets    ParkingTicket[]
+  violations CustomerViolation[]
+
+  @@map("vehicles")
+}
+
+// Parking Infrastructure
+model ParkingZone {
+  id               String                                   @id @default(uuid()) @db.Uuid
+  zoneCode         String                                   @unique @map("zone_code")
+  zoneName         String                                   @map("zone_name")
+  geographicalArea Unsupported("geometry(Polygon, 4326)")? @map("geographical_area")
+
+  // Relationships
+  bays       ParkingBay[]
+  violations CustomerViolation[]
+
+  @@map("parking_zones")
+}
+
+model ParkingBay {
+  id             String   @id @default(uuid()) @db.Uuid
+  zoneId         String   @map("zone_id") @db.Uuid
+  bayCode        String   @unique @map("bay_code")
+  bayName        String   @map("bay_name")
+  address        String?  @db.Text
+  capacityLanes  Int      @default(0) @map("capacity_lanes")
+  baseFee        Decimal  @default(0.00) @map("base_fee") @db.Decimal(10, 2)
+  operatingHours Json?    @map("operating_hours")
+
+  // Relationships
+  zone    ParkingZone     @relation(fields: [zoneId], references: [id])
+  slots   ParkingSlot[]
+  tickets ParkingTicket[]
+
+  @@map("parking_bays")
+}
+
+model ParkingSlot {
+  id         String     @id @default(uuid()) @db.Uuid
+  bayId      String     @map("bay_id") @db.Uuid
+  slotNumber String     @map("slot_number")
+  status     SlotStatus @default(AVAILABLE)
+  sensorId   String?    @map("sensor_id")
+
+  // Relationships
+  bay     ParkingBay      @relation(fields: [bayId], references: [id])
+  tickets ParkingTicket[]
+
+  @@map("parking_slots")
+}
+
+// Parking Transactions & Tickets
+model ParkingTicket {
+  id            String        @id @default(uuid()) @db.Uuid
+  transactionRef String       @unique @map("transaction_ref")
+  customerId    String        @map("customer_id") @db.Uuid
+  vehicleId     String        @map("vehicle_id") @db.Uuid
+  bayId         String        @map("bay_id") @db.Uuid
+  slotId        String?       @map("slot_id") @db.Uuid
+  agentId       String?       @map("agent_id") @db.Uuid
+  channel       String        @default("WEB") // Can be enum if strict
+  amountPaid    Decimal       @map("amount_paid") @db.Decimal(10, 2)
+  durationHours Int           @map("duration_hours")
+  startTime     DateTime      @map("start_time")
+  expiryTime    DateTime      @map("expiry_time")
+  checkoutTime  DateTime?     @map("checkout_time")
+  status        TicketStatus  @default(ACTIVE)
+  paymentMethod PaymentMethod @map("payment_method")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  // Relationships
+  customer    User               @relation("CustomerTickets", fields: [customerId], references: [id])
+  vehicle     Vehicle            @relation(fields: [vehicleId], references: [id])
+  bay         ParkingBay         @relation(fields: [bayId], references: [id])
+  slot        ParkingSlot?       @relation(fields: [slotId], references: [id])
+  agent       User?              @relation("AgentTickets", fields: [agentId], references: [id])
+  receipts    Receipt[]
+  violations  CustomerViolation[] // If related to overstay
+
+  @@map("parking_tickets")
+}
+
+model Receipt {
+  id            String   @id @default(uuid()) @db.Uuid
+  ticketId      String   @map("ticket_id") @db.Uuid
+  receiptNumber String   @unique @map("receipt_number")
+  generatedAt   DateTime @default(now()) @map("generated_at")
+  pdfUrl        String?  @map("pdf_url")
+
+  // Relationships
+  ticket ParkingTicket @relation(fields: [ticketId], references: [id])
+
+  @@map("receipts")
+}
+
+// Enforcement & Violations
+model ViolationType {
+  id            String  @id @default(uuid()) @db.Uuid
+  code          String  @unique
+  description   String  @db.Text
+  defaultFee    Decimal @map("default_fee") @db.Decimal(10, 2)
+  severityLevel Int     @default(1) @map("severity_level")
+
+  // Relationships
+  violations CustomerViolation[]
+
+  @@map("violation_types")
+}
+
+model CustomerViolation {
+  id                  String          @id @default(uuid()) @db.Uuid
+  referenceId         String          @unique @map("reference_id")
+  ticketId            String?         @map("ticket_id") @db.Uuid
+  userId              String          @map("user_id") @db.Uuid
+  vehicleId           String          @map("vehicle_id") @db.Uuid
+  violationTypeId     String          @map("violation_type_id") @db.Uuid
+  zoneId              String          @map("zone_id") @db.Uuid
+  locationDescription String?         @map("location_description") @db.Text
+  violationDate       DateTime        @map("violation_date")
+  feeAmount           Decimal         @map("fee_amount") @db.Decimal(10, 2)
+  status              ViolationStatus @default(OUTSTANDING)
+  enforcementOfficerId String         @map("enforcement_officer_id") @db.Uuid
+  evidenceImages      Json?           @map("evidence_images") // Array of URLs
+
+  // Relationships
+  ticket             ParkingTicket?      @relation(fields: [ticketId], references: [id])
+  user               User                @relation("CustomerViolations", fields: [userId], references: [id])
+  vehicle            Vehicle             @relation(fields: [vehicleId], references: [id])
+  violationType      ViolationType       @relation(fields: [violationTypeId], references: [id])
+  zone               ParkingZone         @relation(fields: [zoneId], references: [id])
+  enforcementOfficer User                @relation("OfficerViolations", fields: [enforcementOfficerId], references: [id])
+  actions            EnforcementAction[]
+  fines              Fine[]
+  appeals            Appeal[]
+
+  @@map("customer_violations")
+}
+
+model EnforcementAction {
+  id                String        @id @default(uuid()) @db.Uuid
+  violationId       String        @map("violation_id") @db.Uuid
+  actionType        ActionType    @map("action_type")
+  referenceId       String        @unique @map("reference_id")
+  requestedBy       String        @map("requested_by") @db.Uuid
+  requestedAt       DateTime      @default(now()) @map("requested_at")
+  status            ActionStatus  @default(PENDING)
+  paymentStatus     PaymentStatus @default(PENDING) @map("payment_status")
+  releaseDate       DateTime?     @map("release_date")
+  towingCompany     String?       @map("towing_company")
+  impoundLotLocation String?      @map("impound_lot_location")
+
+  // Relationships
+  violation   CustomerViolation @relation(fields: [violationId], references: [id])
+  requester   User              @relation(fields: [requestedBy], references: [id])
+
+  @@map("enforcement_actions")
+}
+
+model Fine {
+  id          String   @id @default(uuid()) @db.Uuid
+  violationId String   @map("violation_id") @db.Uuid
+  amount      Decimal  @db.Decimal(10, 2)
+  isPaid      Boolean  @default(false) @map("is_paid")
+  paymentDate DateTime? @map("payment_date")
+
+  // Relationships
+  violation CustomerViolation @relation(fields: [violationId], references: [id])
+
+  @@map("fines")
+}
+
+model Appeal {
+  id           String       @id @default(uuid()) @db.Uuid
+  violationId  String       @map("violation_id") @db.Uuid
+  userId       String       @map("user_id") @db.Uuid
+  appealReason String       @map("appeal_reason") @db.Text
+  attachments  Json? // Array of URLs
+  status       AppealStatus @default(PENDING)
+  reviewerId   String?      @map("reviewer_id") @db.Uuid
+  reviewNotes  String?      @map("review_notes") @db.Text
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  // Relationships
+  violation CustomerViolation @relation(fields: [violationId], references: [id])
+  user      User              @relation("UserAppeals", fields: [userId], references: [id])
+  reviewer  User?             @relation("ReviewerAppeals", fields: [reviewerId], references: [id])
+
+  @@map("appeals")
+}
