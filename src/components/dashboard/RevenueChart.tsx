@@ -17,12 +17,21 @@ export function RevenueChart({ selectedZone }: { selectedZone: string }) {
             <div className="mb-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-heading font-bold text-foreground">Revenue Trend</h3>
-                        <p className="text-sm text-muted-foreground">Real-time collection data (Today)</p>
+                        <h3 className="text-lg font-heading font-bold text-foreground">Revenue Collection</h3>
+                        <p className="text-sm text-muted-foreground">Operational collection performance (Today)</p>
                     </div>
-                    {selectedZone !== "all" && (
-                        <div className="px-2 py-1 bg-primary/10 text-[10px] font-bold text-primary uppercase tracking-tighter rounded">
-                            Filtered View
+                    {selectedZone !== "all" ? (
+                        <div className="flex items-center gap-2">
+                            <div className="px-2 py-1 bg-success/10 text-[10px] font-bold text-success uppercase tracking-tighter rounded">
+                                Zone Performance High
+                            </div>
+                            <div className="px-2 py-1 bg-primary/10 text-[10px] font-bold text-primary uppercase tracking-tighter rounded">
+                                Filtered
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="px-2 py-1 bg-muted text-[10px] font-bold text-muted-foreground uppercase tracking-tighter rounded">
+                            Aggregate State
                         </div>
                     )}
                 </div>

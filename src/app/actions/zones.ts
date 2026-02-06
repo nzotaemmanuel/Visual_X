@@ -10,8 +10,12 @@ export async function getZones() {
             }
         });
         return zones;
-    } catch (error) {
-        console.error("Failed to fetch zones:", error);
+    } catch (error: any) {
+        console.error("Failed to fetch zones:", {
+            message: error.message,
+            code: error.code,
+            meta: error.meta
+        });
         return [];
     }
 }

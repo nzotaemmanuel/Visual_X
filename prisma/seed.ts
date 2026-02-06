@@ -1,4 +1,4 @@
-import { PrismaClient, UserType, AccountStatus, SlotStatus, TicketStatus, PaymentMethod, ViolationStatus, ActionType, ActionStatus, PaymentStatus, AppealStatus, RequestStatus } from './generated/prisma/client'
+import { PrismaClient, UserType, AccountStatus, SlotStatus, TicketStatus, PaymentMethod, ViolationStatus, ActionType, ActionStatus, PaymentStatus, AppealStatus, RequestStatus } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import 'dotenv/config'
@@ -93,8 +93,26 @@ async function main() {
   console.log('🏙️ Seeding Zones, Bays, and Slots...')
   const zonesData = [
     { zoneCode: 'IKJ111', zoneName: 'Ikeja' },
+    { zoneCode: 'AGE112', zoneName: 'Agege' },
+    { zoneCode: 'ALI113', zoneName: 'Alimosho' },
     { zoneCode: 'LAS114', zoneName: 'Lagos Island' },
+    { zoneCode: 'LMN115', zoneName: 'Lagos Mainland' },
+    { zoneCode: 'MSN116', zoneName: 'Mushin' },
     { zoneCode: 'OSS118', zoneName: 'Oshodi-Isolo' },
+    { zoneCode: 'APA119', zoneName: 'Apapa' },
+    { zoneCode: 'SUR120', zoneName: 'Surulere' },
+    { zoneCode: 'EOS121', zoneName: 'Eti-Osa' },
+    { zoneCode: 'VIB122', zoneName: 'Victoria Island' },
+    { zoneCode: 'IKD112', zoneName: 'Ikorodu' },
+    { zoneCode: 'AJI123', zoneName: 'Ajeromi-Ifelodun' },
+    { zoneCode: 'AMO124', zoneName: 'Amuwo-Odofin' },
+    { zoneCode: 'BAD125', zoneName: 'Badagry' },
+    { zoneCode: 'EPE126', zoneName: 'Epe' },
+    { zoneCode: 'IBL127', zoneName: 'Ibeju-Lekki' },
+    { zoneCode: 'IFA128', zoneName: 'Ifako-Ijaiye' },
+    { zoneCode: 'KOS129', zoneName: 'Kosofe' },
+    { zoneCode: 'OJO130', zoneName: 'Ojo' },
+    { zoneCode: 'SHO131', zoneName: 'Shomolu' },
   ]
 
   for (const z of zonesData) {
@@ -141,13 +159,13 @@ async function main() {
   console.log('🎫 Seeding Tickets...')
   const allBays = await prisma.parkingBay.findMany()
 
-  for (let t = 0; t < 5; t++) {
+  for (let t = 0; t < 25; t++) {
     const customer = seededCustomers[t % seededCustomers.length]
     const vehicle = seededVehicles[t % seededVehicles.length]
     const bay = allBays[t % allBays.length]
 
     const startTime = new Date()
-    startTime.setHours(startTime.getHours() - (t + 1))
+    startTime.setHours(startTime.getHours() - (t % 12 + 1))
     const expiryTime = new Date(startTime)
     expiryTime.setHours(expiryTime.getHours() + 2)
 
@@ -161,7 +179,7 @@ async function main() {
         durationHours: 2,
         startTime,
         expiryTime,
-        status: t === 0 ? TicketStatus.EXPIRED : TicketStatus.ACTIVE,
+        status: t % 5 === 0 ? TicketStatus.EXPIRED : TicketStatus.ACTIVE,
         paymentMethod: PaymentMethod.WALLET,
         channel: 'MOBILE_APP'
       }
@@ -207,8 +225,8 @@ async function main() {
   const officers = seededStaff.filter(s => s.userType === UserType.ENFORCEMENT_AGENT)
   const zones = await prisma.parkingZone.findMany()
 
-  for (let v = 0; v < 3; v++) {
-    const vehicle = seededVehicles[v]
+  for (let v = 0; v < 15; v++) {
+    const vehicle = seededVehicles[v % seededVehicles.length]
     const customer = seededCustomers[v % seededCustomers.length]
     const type = seededVTypes[v % seededVTypes.length]
     const officer = officers[v % officers.length]
@@ -223,7 +241,7 @@ async function main() {
         zoneId: zone.id,
         violationDate: new Date(),
         feeAmount: type.defaultFee,
-        status: v === 0 ? ViolationStatus.PAID : ViolationStatus.OUTSTANDING,
+        status: v % 3 === 0 ? ViolationStatus.PAID : ViolationStatus.OUTSTANDING,
         enforcementOfficerId: officer.id,
         locationDescription: `Near ${zone.zoneName} Square`
       }
@@ -234,13 +252,13 @@ async function main() {
       data: {
         violationId: violation.id,
         amount: violation.feeAmount,
-        isPaid: v === 0,
-        paymentDate: v === 0 ? new Date() : null
+        isPaid: v % 3 === 0,
+        paymentDate: v % 3 === 0 ? new Date() : null
       }
     })
 
-    // Create Enforcement Action for the 2nd violation
-    if (v === 1) {
+    // Create Enforcement Action for some violations
+    if (v % 5 === 1) {
       await prisma.enforcementAction.create({
         data: {
           violationId: violation.id,
@@ -252,8 +270,8 @@ async function main() {
       })
     }
 
-    // Create Appeal for the 3rd violation
-    if (v === 2) {
+    // Create Appeal for some violations
+    if (v % 5 === 2) {
       await prisma.appeal.create({
         data: {
           violationId: violation.id,
@@ -269,7 +287,7 @@ async function main() {
   // 6. PARKING REQUESTS
   // -------------------------------------------------------------------------
   console.log('📬 Seeding Parking Requests...')
-  for (let r = 0; r < 5; r++) {
+  for (let r = 0; r < 20; r++) {
     const customer = seededCustomers[r % seededCustomers.length]
     const vehicle = seededVehicles[r % seededVehicles.length]
     const zone = zones[r % zones.length]
@@ -279,9 +297,9 @@ async function main() {
         customerId: customer.id,
         vehicleId: vehicle.id,
         zoneId: zone.id,
-        startTime: new Date(Date.now() + (r * 3600000)), // Requests starting in 0-4 hours
+        startTime: new Date(Date.now() + (r * 3600000)), // Requests starting in 0-19 hours
         durationHours: 1 + Math.floor(Math.random() * 4),
-        status: r === 0 ? RequestStatus.PENDING : RequestStatus.APPROVED
+        status: r % 4 === 0 ? RequestStatus.PENDING : RequestStatus.APPROVED
       }
     })
   }

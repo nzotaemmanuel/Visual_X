@@ -1,4 +1,4 @@
-import { ArrowUpRight, ArrowDownRight, Wallet, Activity, ShieldCheck, AlertOctagon } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Wallet, Activity, ShieldCheck, AlertOctagon, TrendingUp } from "lucide-react";
 import { MOCK_DASHBOARD_DATA } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +7,7 @@ const IconMap = {
     Activity,
     ShieldCheck,
     AlertOctagon,
+    TrendingUp,
 };
 
 export function KPISection({ selectedZone }: { selectedZone: string }) {
@@ -20,11 +21,11 @@ export function KPISection({ selectedZone }: { selectedZone: string }) {
                 // Simple simulated shift for selected zone
                 const displayValue = selectedZone === "all"
                     ? kpi.value
-                    : kpi.label.includes("₦")
-                        ? `₦ ${(Math.random() * 2000000).toLocaleString()}`
-                        : kpi.label.includes("%")
-                            ? `${(Math.random() * 100).toFixed(0)}%`
-                            : (Math.random() * 200).toFixed(0);
+                    : kpi.label.includes("Collection") || kpi.label.includes("Recovery")
+                        ? `₦ ${(Math.floor(Math.random() * 500000) + 100000).toLocaleString()}`
+                        : kpi.label.includes("%") || kpi.label.includes("Rating")
+                            ? `${(Math.random() * 20 + 70).toFixed(1)}%`
+                            : (Math.random() * 50 + 10).toFixed(0);
 
                 return (
                     <div
