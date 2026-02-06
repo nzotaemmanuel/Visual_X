@@ -3,17 +3,34 @@
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { MOCK_DASHBOARD_DATA } from "@/lib/constants";
 
-export function RevenueChart() {
+export function RevenueChart({ selectedZone }: { selectedZone: string }) {
+    // Simulated data shift for selected zone
+    const chartData = selectedZone === "all"
+        ? MOCK_DASHBOARD_DATA.revenueChart
+        : MOCK_DASHBOARD_DATA.revenueChart.map(item => ({
+            ...item,
+            revenue: Math.floor(item.revenue * (0.3 + Math.random() * 0.4)) // Scale down for specific zone
+        }));
+
     return (
         <div className="bg-surface border border-border p-6 h-[400px]">
             <div className="mb-6">
-                <h3 className="text-lg font-heading font-bold text-foreground">Revenue Trend</h3>
-                <p className="text-sm text-muted-foreground">Real-time collection data (Today)</p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-heading font-bold text-foreground">Revenue Trend</h3>
+                        <p className="text-sm text-muted-foreground">Real-time collection data (Today)</p>
+                    </div>
+                    {selectedZone !== "all" && (
+                        <div className="px-2 py-1 bg-primary/10 text-[10px] font-bold text-primary uppercase tracking-tighter rounded">
+                            Filtered View
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={MOCK_DASHBOARD_DATA.revenueChart}>
+                    <AreaChart data={chartData}>
                         <defs>
                             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#064e3b" stopOpacity={0.1} />
@@ -43,7 +60,7 @@ export function RevenueChart() {
                                 color: '#fff'
                             }}
                             itemStyle={{ color: '#fff' }}
-                            // @ts-ignore
+                            // @ts-expect-error: Recharts Tooltip formatter types can be restrictive
                             formatter={(value: number) => [`₦${value.toLocaleString()}`, "Revenue"] as [string, string]}
                         />
                         <Area

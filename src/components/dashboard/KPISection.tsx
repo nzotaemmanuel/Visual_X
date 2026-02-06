@@ -9,19 +9,27 @@ const IconMap = {
     AlertOctagon,
 };
 
-export function KPISection() {
+export function KPISection({ selectedZone }: { selectedZone: string }) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {MOCK_DASHBOARD_DATA.kpis.map((kpi, index) => {
                 const Icon = IconMap[kpi.icon as keyof typeof IconMap];
                 const isPositive = kpi.trend === "up";
-                const isGood = (kpi.icon === "AlertOctagon") ? !isPositive : isPositive; // Logic flip for violations
+                const isGood = (kpi.icon === "AlertOctagon") ? !isPositive : isPositive;
+
+                // Simple simulated shift for selected zone
+                const displayValue = selectedZone === "all"
+                    ? kpi.value
+                    : kpi.label.includes("₦")
+                        ? `₦ ${(Math.random() * 2000000).toLocaleString()}`
+                        : kpi.label.includes("%")
+                            ? `${(Math.random() * 100).toFixed(0)}%`
+                            : (Math.random() * 200).toFixed(0);
 
                 return (
                     <div
-                        key={kpi.label}
-                        className="group relative overflow-hidden bg-surface border border-border p-4 hover:border-primary/50 transition-colors animate-in fade-in slide-in-from-bottom-4 duration-500"
-                        style={{ animationDelay: `${index * 100}ms` }}
+                        key={`${kpi.label}-${selectedZone}`}
+                        className="group relative overflow-hidden bg-surface border border-border p-4 hover:border-primary/50 transition-colors animate-in fade-in slide-in-from-bottom-2 duration-300"
                     >
                         {/* Contextual Color Strip */}
                         <div className={cn(
@@ -39,8 +47,8 @@ export function KPISection() {
                         </div>
 
                         <div className="flex items-baseline space-x-2">
-                            <span className="text-2xl font-bold font-heading tabular-nums text-foreground">
-                                {kpi.value}
+                            <span className="text-2xl font-bold font-heading tabular-nums text-foreground animate-in fade-in slide-in-from-left-2 duration-500">
+                                {displayValue}
                             </span>
                         </div>
 

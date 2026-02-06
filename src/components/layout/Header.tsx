@@ -1,25 +1,23 @@
 "use client";
 
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { MOCK_USER } from "@/lib/constants";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { GlobalSearch } from "./GlobalSearch";
+import { usePathname } from "next/navigation";
 
 export function Header() {
+    const pathname = usePathname();
+    const isHome = pathname === "/";
+
     return (
         <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-surface/80 px-6 backdrop-blur-sm transition-all">
             <div className="flex items-center gap-4">
                 <button className="lg:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground">
                     <Menu className="h-6 w-6" />
                 </button>
-                {/* Global Search */}
-                <div className="relative hidden md:block">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <input
-                        type="search"
-                        placeholder="Search zones, plates, or violations..."
-                        className="h-9 w-64 rounded-none border border-border bg-background pl-9 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/50 lg:w-96"
-                    />
-                </div>
+                {/* Global Search - Hidden on Executive Overview as per user request */}
+                {!isHome && <GlobalSearch />}
             </div>
 
             <div className="flex items-center gap-4">

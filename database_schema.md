@@ -4,7 +4,8 @@ This document defines the comprehensive database schema for the LASPA Parking Ma
 
 ## 1. Core Architecture
 - **Database**: PostgreSQL 15+ (Required for robust geospatial queries and JSONB support).
-- **ORM**: Prisma (Recommended for type safety and migration management).
+- **node-postgres (pg) - Raw SQL**: Required for maximum control and performance
+
 
 ## 2. Entity Relationship Model
 
