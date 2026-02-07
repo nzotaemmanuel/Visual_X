@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { ZoneFilter } from "./ZoneFilter";
+import { StaffModal } from "./StaffModal";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { useSearch } from "@/lib/SearchContext";
 import {
     Users,
@@ -16,7 +18,9 @@ import {
     MoreHorizontal,
     Star,
     LayoutGrid,
-    List
+    List,
+    Edit,
+    Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateUsers, generateVehicles } from "@/lib/mockData";
@@ -25,6 +29,15 @@ interface Zone {
     id: string;
     zoneCode: string;
     zoneName: string;
+}
+
+interface Staff {
+    id: string;
+    name: string;
+    role: string;
+    zone: string;
+    status: string;
+    rating: number;
 }
 
 interface DirectoryContainerProps {
@@ -37,6 +50,9 @@ export function DirectoryContainer({ zones, initialMode = "staff" }: DirectoryCo
     const [view, setView] = useState<"grid" | "list">("list");
     const [selectedZone, setSelectedZone] = useState("all");
     const { searchQuery } = useSearch();
+    const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+    const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const filteredZones = useMemo(() => {
         if (!searchQuery) return zones;
@@ -153,6 +169,7 @@ export function DirectoryContainer({ zones, initialMode = "staff" }: DirectoryCo
                                     <th className="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Assigned Zone</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Rating</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -195,6 +212,24 @@ export function DirectoryContainer({ zones, initialMode = "staff" }: DirectoryCo
                                                 <Star className="h-3 w-3 fill-warning text-warning" />
                                             </div>
                                         </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => setEditingStaff(user)}
+                                                    className="p-1 hover:bg-primary/10 text-primary rounded transition-colors"
+                                                    title="Edit staff"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeletingStaff(user)}
+                                                    className="p-1 hover:bg-danger/10 text-danger rounded transition-colors"
+                                                    title="Delete staff"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -232,6 +267,25 @@ export function DirectoryContainer({ zones, initialMode = "staff" }: DirectoryCo
                                                 {user.rating.toFixed(1)} <Star className="h-2 w-2 fill-warning text-warning" />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div className="w-full h-px bg-border my-4" />
+
+                                    <div className="flex items-center justify-center gap-2">
+                                        <button
+                                            onClick={() => setEditingStaff(user)}
+                                            className="flex-1 px-3 py-2 bg-primary/10 text-primary text-xs font-bold rounded hover:bg-primary/20 transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            <Edit className="h-3 w-3" />
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => setDeletingStaff(user)}
+                                            className="flex-1 px-3 py-2 bg-danger/10 text-danger text-xs font-bold rounded hover:bg-danger/20 transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                            Remove
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -335,6 +389,26 @@ export function DirectoryContainer({ zones, initialMode = "staff" }: DirectoryCo
                     <button className="px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase hover:bg-primary/90 transition-colors">Next</button>
                 </div>
             </div>
+
+            {/* Modals */}
+            {editingStaff && (
+                <StaffModal
+                    staff={editingStaff as any}
+                    isOpen={!!editingStaff}
+                    onClose={() => setEditingStaff(null)}
+                    onSave={() => setRefreshKey(prev => prev + 1)}
+                />
+            )}
+
+            {deletingStaff && (
+                <DeleteConfirmDialog
+                    staffId={deletingStaff.id}
+                    staffName={deletingStaff.name}
+                    isOpen={!!deletingStaff}
+                    onClose={() => setDeletingStaff(null)}
+                    onConfirm={() => setRefreshKey(prev => prev + 1)}
+                />
+            )}
         </div>
     );
 }
