@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DirectoryContainer } from "@/components/dashboard/DirectoryContainer";
-import { getZones } from "@/lib/db";
+import { getZones, getStaffList } from "@/lib/db";
 
 export const metadata = {
     title: "Staff Management | LASPA Analytics",
@@ -17,5 +17,6 @@ export default function StaffPage() {
 
 async function StaffContent() {
     const zones = await getZones();
-    return <DirectoryContainer zones={zones} initialMode="staff" />;
+    const staffList = await getStaffList();
+    return <DirectoryContainer zones={zones} initialMode="staff" staffData={staffList} />;
 }

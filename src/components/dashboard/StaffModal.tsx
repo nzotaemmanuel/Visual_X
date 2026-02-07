@@ -4,7 +4,13 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateStaff } from "@/app/actions/staff";
-import { StaffRole, AccountStatus } from "@prisma/client";
+import { AccountStatus } from "@prisma/client";
+
+enum StaffRole {
+    ADMIN = "ADMIN",
+    PARKING_AGENT = "PARKING_AGENT",
+    ENFORCEMENT_AGENT = "ENFORCEMENT_AGENT",
+}
 
 interface Staff {
     id?: number | string;

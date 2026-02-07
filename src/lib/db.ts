@@ -22,3 +22,10 @@ export async function getZones() {
         id: z.id.toString()
     }));
 }
+
+export async function getStaffList() {
+    const staff = await prisma.staff.findMany({
+        orderBy: { firstName: 'asc' }
+    });
+    return staff;
+}
