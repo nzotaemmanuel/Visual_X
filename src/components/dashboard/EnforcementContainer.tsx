@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ZoneFilter } from "./ZoneFilter";
 import { useSearch } from "@/lib/SearchContext";
 import {
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { cn } from "@/lib/utils";
-import { generateEnforcementActions } from "@/lib/mockData";
 
 interface Zone {
     id: string;
@@ -41,6 +40,8 @@ const VIOLATION_TYPES = [
 export function EnforcementContainer({ zones }: EnforcementContainerProps) {
     const [selectedZone, setSelectedZone] = useState("all");
     const { searchQuery } = useSearch();
+    const [enforcementActions, setEnforcementActions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const filteredZones = useMemo(() => {
         if (!searchQuery) return zones;
@@ -50,7 +51,26 @@ export function EnforcementContainer({ zones }: EnforcementContainerProps) {
         );
     }, [zones, searchQuery]);
 
-    const enforcementActions = useMemo(() => generateEnforcementActions(selectedZone, zones), [selectedZone, zones]);
+    useEffect(() => {
+        const fetchActions = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (selectedZone !== 'all') {
+                    params.append('zoneId', selectedZone);
+                }
+                const response = await fetch(`/api/enforcement-actions?${params}`);
+                const data = await response.json();
+                setEnforcementActions(data);
+            } catch (error) {
+                console.error('Failed to fetch enforcement actions:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchActions();
+    }, [selectedZone]);
 
     const stats = [
         { label: "Total Violations", value: "1,245", trend: "+12%", icon: ShieldAlert, color: "danger" },

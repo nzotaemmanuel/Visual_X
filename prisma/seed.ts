@@ -21,7 +21,7 @@ async function main() {
   console.log('🔐 Seeding Auth System Users...')
   
   const authUsers = [
-    { email: 'admin@laspa.gov.ng', password: 'Admin@123456', firstName: 'System', lastName: 'Administrator', role: 'ADMIN' },
+    { email: 'nzotaemmanuel16@gmail.com', password: 'Admin@123456', firstName: 'System', lastName: 'Administrator', role: 'ADMIN' },
     { email: 'officer@laspa.gov.ng', password: 'Officer@123456', firstName: 'John', lastName: 'Officer', role: 'ENFORCEMENT_OFFICER' },
     { email: 'analyst@laspa.gov.ng', password: 'Analyst@123456', firstName: 'Jane', lastName: 'Analyst', role: 'ANALYST' },
     { email: 'viewer@laspa.gov.ng', password: 'Viewer@123456', firstName: 'View', lastName: 'Only', role: 'VIEWER' },

@@ -2,7 +2,7 @@
 
 import { Trophy, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { generateTopZones, Zone } from "@/lib/mockData";
+import { useEffect, useState } from "react";
 
 interface ZoneRank {
     id: string;
@@ -13,12 +13,36 @@ interface ZoneRank {
     progress: number;
 }
 
+interface Zone {
+    id: number;
+    zoneCode: string;
+    zoneName: string;
+}
+
 interface TopZonesProps {
     zones: Zone[];
 }
 
 export function TopZones({ zones }: TopZonesProps) {
-    const topZones = generateTopZones(zones);
+    const [topZones, setTopZones] = useState<ZoneRank[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchTopZones = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch('/api/top-zones');
+                const data = await response.json();
+                setTopZones(data);
+            } catch (error) {
+                console.error('Failed to fetch top zones:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTopZones();
+    }, []);
 
     return (
         <div className="bg-surface border border-border flex flex-col h-full overflow-hidden group">

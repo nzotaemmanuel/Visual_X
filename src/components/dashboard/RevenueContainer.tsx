@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { RevenueKPIs } from "./RevenueKPIs";
 import { RevenueDistribution } from "./RevenueDistribution";
 import { RevenueChart } from "./RevenueChart";
@@ -8,7 +8,6 @@ import { ZoneFilter } from "./ZoneFilter";
 import { useSearch } from "@/lib/SearchContext";
 import { Clock, Download, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { generateTransactions } from "@/lib/mockData";
 
 interface Zone {
     id: string;
@@ -23,6 +22,8 @@ interface RevenueContainerProps {
 export function RevenueContainer({ zones }: RevenueContainerProps) {
     const [selectedZone, setSelectedZone] = useState("all");
     const { searchQuery } = useSearch();
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const filteredZones = useMemo(() => {
         if (!searchQuery) return zones;
@@ -32,7 +33,26 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
         );
     }, [zones, searchQuery]);
 
-    const transactions = useMemo(() => generateTransactions(selectedZone, zones), [selectedZone, zones]);
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (selectedZone !== 'all') {
+                    params.append('zoneId', selectedZone);
+                }
+                const response = await fetch(`/api/transactions?${params}`);
+                const data = await response.json();
+                setTransactions(data);
+            } catch (error) {
+                console.error('Failed to fetch transactions:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTransactions();
+    }, [selectedZone]);
 
     return (
         <div className="flex flex-col gap-8">

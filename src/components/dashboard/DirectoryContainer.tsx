@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ZoneFilter } from "./ZoneFilter";
 import { StaffModal } from "./StaffModal";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
@@ -23,7 +23,6 @@ import {
     Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { generateVehicles } from "@/lib/mockData";
 import { Staff } from "@prisma/client";
 
 interface Zone {
@@ -51,6 +50,8 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
     const [editingStaff, setEditingStaff] = useState<DisplayStaff | null>(null);
     const [deletingStaff, setDeletingStaff] = useState<DisplayStaff | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [allVehicles, setAllVehicles] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
     const filteredZones = useMemo(() => {
         if (!searchQuery) return zones;
@@ -68,7 +69,26 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
         }));
     }, [staffData]);
 
-    const allVehicles = useMemo(() => generateVehicles(selectedZone, zones), [selectedZone, zones]);
+    useEffect(() => {
+        const fetchVehicles = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                if (selectedZone !== 'all') {
+                    params.append('zoneId', selectedZone);
+                }
+                const response = await fetch(`/api/vehicles?${params}`);
+                const data = await response.json();
+                setAllVehicles(data);
+            } catch (error) {
+                console.error('Failed to fetch vehicles:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchVehicles();
+    }, [selectedZone]);
 
     const filteredStaff = useMemo(() => {
         return displayStaffList.filter(staff =>
