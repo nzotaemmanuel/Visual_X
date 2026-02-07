@@ -14,11 +14,19 @@ interface Zone {
     zoneName: string;
 }
 
-interface DashboardContainerProps {
-    zones: Zone[];
+interface RecentActivityItem {
+    id: string;
+    type: "violation" | "payment" | "alert";
+    message: string;
+    time: string;
 }
 
-export function DashboardContainer({ zones }: DashboardContainerProps) {
+interface DashboardContainerProps {
+    zones: Zone[];
+    recentOperations?: RecentActivityItem[];
+}
+
+export function DashboardContainer({ zones, recentOperations = [] }: DashboardContainerProps) {
     const [selectedZone, setSelectedZone] = useState("all");
 
     return (
@@ -123,7 +131,7 @@ export function DashboardContainer({ zones }: DashboardContainerProps) {
                     </div>
                 </div>
                 <div className="lg:col-span-4">
-                    <RecentActivity />
+                    <RecentActivity activities={recentOperations} />
                 </div>
             </div>
         </div>

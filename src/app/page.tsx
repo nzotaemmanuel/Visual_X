@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DashboardContainer } from "@/components/dashboard/DashboardContainer";
-import { getZones } from "./actions/zones";
+import { getZones, getRecentOperations } from "./actions/zones";
 
 export default function Home() {
   return (
@@ -12,5 +12,6 @@ export default function Home() {
 
 async function HomeContent() {
   const zones = await getZones();
-  return <DashboardContainer zones={zones} />;
+  const recentOperations = await getRecentOperations();
+  return <DashboardContainer zones={zones} recentOperations={recentOperations} />;
 }

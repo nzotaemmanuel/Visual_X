@@ -1,19 +1,28 @@
-import { MOCK_DASHBOARD_DATA } from "@/lib/constants";
+"use client";
+
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { useMemo } from "react";
 
+interface RecentActivityItem {
+    id: string;
+    type: "violation" | "payment" | "alert";
+    message: string;
+    time: string;
+}
+
 interface RecentActivityProps {
+    activities?: RecentActivityItem[];
     searchQuery?: string;
 }
 
-export function RecentActivity({ searchQuery = "" }: RecentActivityProps) {
+export function RecentActivity({ activities = [], searchQuery = "" }: RecentActivityProps) {
     const filteredActivity = useMemo(() => {
-        if (!searchQuery) return MOCK_DASHBOARD_DATA.recentActivity;
-        return MOCK_DASHBOARD_DATA.recentActivity.filter(activity =>
+        if (!searchQuery) return activities;
+        return activities.filter(activity =>
             activity.message.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [searchQuery]);
+    }, [activities, searchQuery]);
 
     return (
         <div className="bg-surface border border-border p-6 h-full min-h-[400px]">
