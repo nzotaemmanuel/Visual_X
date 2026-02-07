@@ -2,13 +2,51 @@ import { PrismaClient, StaffRole, AccountStatus, SlotStatus, TicketStatus, Payme
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import 'dotenv/config'
+import bcryptjs from 'bcryptjs'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
+async function hashPassword(password: string): Promise<string> {
+  return bcryptjs.hash(password, 10)
+}
+
 async function main() {
   console.log('🚀 Starting Comprehensive Seeding...')
+
+  // -------------------------------------------------------------------------
+  // 0. AUTHENTICATION SYSTEM USERS
+  // -------------------------------------------------------------------------
+  console.log('🔐 Seeding Auth System Users...')
+  
+  const authUsers = [
+    { email: 'admin@laspa.gov.ng', password: 'Admin@123456', firstName: 'System', lastName: 'Administrator', role: 'ADMIN' },
+    { email: 'officer@laspa.gov.ng', password: 'Officer@123456', firstName: 'John', lastName: 'Officer', role: 'ENFORCEMENT_OFFICER' },
+    { email: 'analyst@laspa.gov.ng', password: 'Analyst@123456', firstName: 'Jane', lastName: 'Analyst', role: 'ANALYST' },
+    { email: 'viewer@laspa.gov.ng', password: 'Viewer@123456', firstName: 'View', lastName: 'Only', role: 'VIEWER' },
+  ]
+
+  for (const authUser of authUsers) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: authUser.email },
+    })
+
+    if (!existingUser) {
+      const passwordHash = await hashPassword(authUser.password)
+      await prisma.user.create({
+        data: {
+          email: authUser.email,
+          passwordHash,
+          firstName: authUser.firstName,
+          lastName: authUser.lastName,
+          role: authUser.role as any,
+          isActive: true,
+        },
+      })
+      console.log(`✅ Created user: ${authUser.email}`)
+    }
+  }
 
   // -------------------------------------------------------------------------
   // 1. IDENTITY & ACCESS MANAGEMENT

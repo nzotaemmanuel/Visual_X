@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/constants";
 import NextImage from "next/image";
-import { LucideIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { LucideIcon, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/authContext";
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -14,6 +15,7 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     const pathname = usePathname();
+    const { user, logout } = useAuth();
 
     return (
         <aside className={cn(
@@ -68,7 +70,47 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             </nav>
 
             {/* Footer / Status */}
-            <div className="mt-auto w-full px-4 pb-4">
+            <div className="mt-auto w-full px-4 pb-4 space-y-4">
+                {/* User Info */}
+                {user && (
+                    <div className={cn(
+                        "flex items-center gap-3 overflow-hidden rounded-lg border border-border bg-muted/30 p-3 transition-all duration-300",
+                        isCollapsed ? "justify-center" : "justify-start"
+                    )}>
+                        <div className="h-10 w-10 rounded-full bg-primary/20 text-primary font-semibold text-sm flex items-center justify-center shrink-0 flex-none">
+                            {user.firstName?.[0]}{user.lastName?.[0]}
+                        </div>
+                        {!isCollapsed && (
+                            <div className="hidden flex-1 lg:block min-w-0">
+                                <p className="text-xs font-semibold text-foreground truncate">
+                                    {user.firstName} {user.lastName}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground truncate capitalize">
+                                    {user.role.replace(/_/g, ' ')}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Logout Button */}
+                <button
+                    onClick={logout}
+                    className={cn(
+                        "flex items-center gap-3 w-full h-10 rounded-none px-3 text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                        isCollapsed ? "justify-center" : "justify-center lg:justify-start"
+                    )}
+                    title={isCollapsed ? "Logout" : undefined}
+                >
+                    <LogOut className="h-5 w-5 shrink-0" />
+                    {!isCollapsed && (
+                        <span className="hidden ml-3 whitespace-nowrap lg:block">
+                            Logout
+                        </span>
+                    )}
+                </button>
+
+                {/* System Status */}
                 <div className={cn(
                     "flex items-center gap-3 overflow-hidden rounded-none border border-border bg-muted/30 p-2 transition-all duration-300",
                     isCollapsed ? "justify-center" : "justify-center lg:justify-start"

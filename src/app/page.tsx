@@ -12,6 +12,6 @@ export default function Home() {
 
 async function HomeContent() {
   const zones = await getZones();
-  const recentOperations = await getRecentOperations();
+  const recentOperations = await getRecentOperations(5);
   return <DashboardContainer zones={zones} recentOperations={recentOperations} />;
 }

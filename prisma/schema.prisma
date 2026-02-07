@@ -15,6 +15,13 @@ enum StaffRole {
   ENFORCEMENT_AGENT
 }
 
+enum UserRole {
+  ADMIN
+  ENFORCEMENT_OFFICER
+  ANALYST
+  VIEWER
+}
+
 enum AccountStatus {
   ACTIVE
   SUSPENDED
@@ -78,6 +85,68 @@ enum RequestStatus {
   REJECTED
   EXPIRED
   CANCELLED
+}
+
+// Authentication & User Management
+model User {
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  passwordHash    String    @map("password_hash")
+  firstName       String?   @map("first_name")
+  lastName        String?   @map("last_name")
+  role            UserRole  @default(VIEWER)
+  isActive        Boolean   @default(true) @map("is_active")
+  lastActiveAt    DateTime? @map("last_active_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relationships
+  sessions        Session[]
+  refreshTokens   RefreshToken[]
+  passwordResets  PasswordReset[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       Int       @map("user_id")
+  token        String    @unique @db.Text
+  expiresAt    DateTime  @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  // Relationships
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       Int       @map("user_id")
+  token        String    @unique @db.Text
+  expiresAt    DateTime  @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  revokedAt    DateTime? @map("revoked_at")
+  
+  // Relationships
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    Int       @map("user_id")
+  token     String    @unique @db.Text
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relationships
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
 }
 
 // Identity & Access Management
