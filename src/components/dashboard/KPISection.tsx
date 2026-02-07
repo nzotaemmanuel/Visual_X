@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { ArrowUpRight, ArrowDownRight, Wallet, Activity, ShieldCheck, AlertOctagon, TrendingUp } from "lucide-react";
 import { MOCK_DASHBOARD_DATA } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,16 @@ const IconMap = {
 };
 
 export function KPISection({ selectedZone }: { selectedZone: string }) {
+    const [isMounted, setIsMounted] = (typeof window !== 'undefined')
+        ? [true, () => { }] // Simple bypass if already on client
+        : [false, () => { }]; // Placeholder for SSR
+
+    // Actually use proper state for mount tracking to be safe
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {MOCK_DASHBOARD_DATA.kpis.map((kpi, index) => {
@@ -19,13 +30,14 @@ export function KPISection({ selectedZone }: { selectedZone: string }) {
                 const isGood = (kpi.icon === "AlertOctagon") ? !isPositive : isPositive;
 
                 // Simple simulated shift for selected zone
-                const displayValue = selectedZone === "all"
+                // Note: We use fixed values during SSR to avoid hydration mismatch
+                const displayValue = !mounted || selectedZone === "all"
                     ? kpi.value
                     : kpi.label.includes("Collection") || kpi.label.includes("Recovery")
-                        ? `₦ ${(Math.floor(Math.random() * 500000) + 100000).toLocaleString()}`
+                        ? `₦ ${(100000 + (parseInt(selectedZone) * 5000)).toLocaleString()}`
                         : kpi.label.includes("%") || kpi.label.includes("Rating")
-                            ? `${(Math.random() * 20 + 70).toFixed(1)}%`
-                            : (Math.random() * 50 + 10).toFixed(0);
+                            ? `${(75 + (parseInt(selectedZone) % 15)).toFixed(1)}%`
+                            : (10 + (parseInt(selectedZone) % 40)).toFixed(0);
 
                 return (
                     <div

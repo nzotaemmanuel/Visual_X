@@ -4,12 +4,15 @@ import { prisma } from "@/lib/db";
 
 export async function getZones() {
     try {
-        const zones = await prisma.parkingZone.findMany({
+        const rawZones = await prisma.parkingZone.findMany({
             orderBy: {
                 zoneName: 'asc'
             }
         });
-        return zones;
+        return rawZones.map(z => ({
+            ...z,
+            id: z.id.toString()
+        }));
     } catch (error: any) {
         console.error("Failed to fetch zones:", {
             message: error.message,

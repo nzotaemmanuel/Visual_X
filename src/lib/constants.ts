@@ -99,14 +99,14 @@ export const MOCK_DASHBOARD_DATA = {
         },
     ],
     revenueChart: [
-        { time: "06:00", revenue: 150000 },
-        { time: "08:00", revenue: 450000 },
-        { time: "10:00", revenue: 1200000 },
-        { time: "12:00", revenue: 3800000 },
-        { time: "14:00", revenue: 4100000 },
-        { time: "16:00", revenue: 3900000 },
-        { time: "18:00", revenue: 2800000 },
-        { time: "20:00", revenue: 1200000 },
+        { time: "06:00", actual: 150000, target: 200000 },
+        { time: "08:00", actual: 450000, target: 500000 },
+        { time: "10:00", actual: 1200000, target: 1100000 },
+        { time: "12:00", actual: 3800000, target: 3500000 },
+        { time: "14:00", actual: 4100000, target: 4000000 },
+        { time: "16:00", actual: 3900000, target: 3800000 },
+        { time: "18:00", actual: 2800000, target: 3000000 },
+        { time: "20:00", actual: 1200000, target: 1500000 },
     ],
     recentActivity: [
         {

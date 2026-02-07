@@ -12,3 +12,13 @@ export const prisma =
     new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+export async function getZones() {
+    const rawZones = await prisma.parkingZone.findMany({
+        orderBy: { zoneName: 'asc' }
+    });
+    return rawZones.map(z => ({
+        ...z,
+        id: z.id.toString()
+    }));
+}

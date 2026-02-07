@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { RevenueKPIs } from "./RevenueKPIs";
+import { RevenueDistribution } from "./RevenueDistribution";
 import { RevenueChart } from "./RevenueChart";
 import { ZoneFilter } from "./ZoneFilter";
-import { KPISection } from "./KPISection";
 import { useSearch } from "@/lib/SearchContext";
+import { Clock, Download, Filter } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { generateTransactions } from "@/lib/mockData";
 
 interface Zone {
     id: string;
@@ -28,6 +32,8 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
         );
     }, [zones, searchQuery]);
 
+    const transactions = useMemo(() => generateTransactions(selectedZone, zones), [selectedZone, zones]);
+
     return (
         <div className="flex flex-col gap-8">
             {/* Header Section */}
@@ -41,33 +47,81 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                     </p>
                 </div>
 
-                <ZoneFilter
-                    zones={filteredZones}
-                    selectedZone={selectedZone}
-                    onZoneChange={setSelectedZone}
-                />
+                <div className="flex items-center gap-3">
+                    <button className="hidden md:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-xs font-bold text-muted-foreground hover:border-primary/50 transition-colors uppercase tracking-wider">
+                        <Download className="h-4 w-4" />
+                        Export Report
+                    </button>
+                    <ZoneFilter
+                        zones={filteredZones}
+                        selectedZone={selectedZone}
+                        onZoneChange={setSelectedZone}
+                    />
+                </div>
             </div>
 
-            {/* Revenue Focused KPIs */}
-            <KPISection selectedZone={selectedZone} />
+            {/* Revenue KPIs */}
+            <RevenueKPIs selectedZone={selectedZone} />
 
             {/* Main Content Grid */}
             <div className="grid gap-6 grid-cols-1">
                 <RevenueChart selectedZone={selectedZone} />
 
-                <div className="bg-surface border border-border p-12 flex flex-col items-center justify-center text-center">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                        <span className="text-2xl">💰</span>
+                <RevenueDistribution />
+
+                {/* Recent Collections Feed */}
+                <div className="bg-surface border border-border">
+                    <div className="p-6 border-b border-border bg-muted/20 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-heading font-bold text-foreground flex items-center gap-2">
+                                <Clock className="h-5 w-5 text-primary" />
+                                Recent Collection Pulse
+                            </h3>
+                            <p className="text-sm text-muted-foreground">Live stream of financial transactions.</p>
+                        </div>
+                        <button className="p-2 hover:bg-muted rounded transition-colors">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                        </button>
                     </div>
-                    <h3 className="text-xl font-heading font-bold text-foreground">Collection Gap Analysis</h3>
-                    <p className="text-muted-foreground max-w-md mt-2">
-                        Comparing projected vs. actual revenue for
-                        <span className="font-bold text-primary ml-1">
-                            {selectedZone === "all"
-                                ? (searchQuery ? `Filtered: ${searchQuery}` : "All Zones")
-                                : zones.find(z => z.id === selectedZone)?.zoneName}
-                        </span>.
-                    </p>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-muted/30 border-b border-border">
+                                <tr>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Transaction ID</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Zone/Bay</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Amount</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Channel</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {transactions.map((row) => (
+                                    <tr key={row.id} className="hover:bg-muted/10 transition-colors group">
+                                        <td className="px-6 py-4 text-xs font-bold text-foreground">{row.id}</td>
+                                        <td className="px-6 py-4 text-xs text-muted-foreground underline decoration-primary/20 hover:decoration-primary transition-colors cursor-pointer">{row.zone}</td>
+                                        <td className="px-6 py-4 text-xs font-bold text-foreground">{row.amount}</td>
+                                        <td className="px-6 py-4 text-xs text-muted-foreground">{row.channel}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={cn(
+                                                "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                row.status === "Success" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                                            )}>
+                                                {row.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs text-muted-foreground">{row.time}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="p-4 bg-muted/10 border-t border-border flex justify-center">
+                        <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">
+                            Load Full Transaction History
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
