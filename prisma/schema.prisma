@@ -9,8 +9,7 @@ datasource db {
 }
 
 // Enums
-enum UserType {
-  CUSTOMER
+enum StaffRole {
   ADMIN
   PARKING_AGENT
   ENFORCEMENT_AGENT
@@ -82,14 +81,13 @@ enum RequestStatus {
 }
 
 // Identity & Access Management
-model User {
+model Customer {
   id                  Int           @id @default(autoincrement())
-  customerReferenceId String?       @unique @map("customer_reference_id")
+  customerReferenceId String        @unique @map("customer_reference_id")
   firstName           String        @map("first_name")
   lastName            String        @map("last_name")
   email               String        @unique
   phoneNumber         String        @map("phone_number")
-  userType            UserType      @default(CUSTOMER) @map("user_type")
   accountStatus       AccountStatus @default(ACTIVE) @map("account_status")
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
@@ -97,20 +95,36 @@ model User {
   // Relationships
   vehicles            Vehicle[]
   tickets             ParkingTicket[] @relation("CustomerTickets")
-  agentTickets        ParkingTicket[] @relation("AgentTickets")
   violations          CustomerViolation[] @relation("CustomerViolations")
-  officerViolations   CustomerViolation[] @relation("OfficerViolations")
-  requestedActions    EnforcementAction[]
-  reviewedAppeals     Appeal[]            @relation("ReviewerAppeals")
-  appeals             Appeal[]            @relation("UserAppeals")
+  appeals             Appeal[]            @relation("CustomerAppeals")
   parkingRequests     ParkingRequest[]    @relation("CustomerRequests")
 
-  @@map("users")
+  @@map("customers")
+}
+
+model Staff {
+  id              Int           @id @default(autoincrement())
+  firstName       String        @map("first_name")
+  lastName        String        @map("last_name")
+  email           String        @unique
+  phoneNumber     String        @map("phone_number")
+  role            StaffRole
+  accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relationships
+  agentTickets        ParkingTicket[] @relation("AgentTickets")
+  violationsRecorded  CustomerViolation[] @relation("OfficerViolations")
+  requestedActions    EnforcementAction[]
+  reviewedAppeals     Appeal[]            @relation("ReviewerAppeals")
+
+  @@map("staff")
 }
 
 model Vehicle {
   id          Int      @id @default(autoincrement())
-  userId      Int      @map("user_id")
+  customerId  Int      @map("customer_id")
   plateNumber String   @unique @map("plate_number")
   plateCode   String?  @map("plate_code") // e.g., "KJA"
   plateSource String?  @map("plate_source") // e.g., "Lagos"
@@ -120,7 +134,7 @@ model Vehicle {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relationships
-  user       User                @relation(fields: [userId], references: [id])
+  customer   Customer             @relation(fields: [customerId], references: [id])
   tickets    ParkingTicket[]
   violations      CustomerViolation[]
   parkingRequests ParkingRequest[]
@@ -197,11 +211,11 @@ model ParkingTicket {
   createdAt     DateTime      @default(now()) @map("created_at")
 
   // Relationships
-  customer    User               @relation("CustomerTickets", fields: [customerId], references: [id])
+  customer    Customer           @relation("CustomerTickets", fields: [customerId], references: [id])
   vehicle     Vehicle            @relation(fields: [vehicleId], references: [id])
   bay         ParkingBay         @relation(fields: [bayId], references: [id])
   slot        ParkingSlot?       @relation(fields: [slotId], references: [id])
-  agent       User?              @relation("AgentTickets", fields: [agentId], references: [id])
+  agent       Staff?             @relation("AgentTickets", fields: [agentId], references: [id])
   receipts    Receipt[]
   violations  CustomerViolation[] // If related to overstay
 
@@ -239,7 +253,7 @@ model CustomerViolation {
   id                  Int             @id @default(autoincrement())
   referenceId         String          @unique @map("reference_id")
   ticketId            Int?            @map("ticket_id")
-  userId              Int             @map("user_id")
+  customerId          Int             @map("customer_id")
   vehicleId           Int             @map("vehicle_id")
   violationTypeId     Int             @map("violation_type_id")
   zoneId              Int             @map("zone_id")
@@ -252,11 +266,11 @@ model CustomerViolation {
 
   // Relationships
   ticket             ParkingTicket?      @relation(fields: [ticketId], references: [id])
-  user               User                @relation("CustomerViolations", fields: [userId], references: [id])
+  customer           Customer            @relation("CustomerViolations", fields: [customerId], references: [id])
   vehicle            Vehicle             @relation(fields: [vehicleId], references: [id])
   violationType      ViolationType       @relation(fields: [violationTypeId], references: [id])
   zone               ParkingZone         @relation(fields: [zoneId], references: [id])
-  enforcementOfficer User                @relation("OfficerViolations", fields: [enforcementOfficerId], references: [id])
+  enforcementOfficer Staff               @relation("OfficerViolations", fields: [enforcementOfficerId], references: [id])
   actions            EnforcementAction[]
   fines              Fine[]
   appeals            Appeal[]
@@ -279,7 +293,7 @@ model EnforcementAction {
 
   // Relationships
   violation   CustomerViolation @relation(fields: [violationId], references: [id])
-  requester   User              @relation(fields: [requestedBy], references: [id])
+  requester   Staff             @relation(fields: [requestedBy], references: [id])
 
   @@map("enforcement_actions")
 }
@@ -300,7 +314,7 @@ model Fine {
 model Appeal {
   id           Int          @id @default(autoincrement())
   violationId  Int          @map("violation_id")
-  userId       Int          @map("user_id")
+  customerId   Int          @map("customer_id")
   appealReason String       @map("appeal_reason") @db.Text
   attachments  Json? // Array of URLs
   status       AppealStatus @default(PENDING)
@@ -310,8 +324,8 @@ model Appeal {
 
   // Relationships
   violation CustomerViolation @relation(fields: [violationId], references: [id])
-  user      User              @relation("UserAppeals", fields: [userId], references: [id])
-  reviewer  User?             @relation("ReviewerAppeals", fields: [reviewerId], references: [id])
+  customer  Customer          @relation("CustomerAppeals", fields: [customerId], references: [id])
+  reviewer  Staff?            @relation("ReviewerAppeals", fields: [reviewerId], references: [id])
 
   @@map("appeals")
 }
@@ -330,11 +344,11 @@ model ParkingRequest {
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   // Relationships
-  customer User         @relation("CustomerRequests", fields: [customerId], references: [id])
-  vehicle  Vehicle      @relation(fields: [vehicleId], references: [id])
-  zone     ParkingZone? @relation(fields: [zoneId], references: [id])
-  bay      ParkingBay?  @relation(fields: [bayId], references: [id])
-  slot     ParkingSlot? @relation(fields: [slotId], references: [id])
+  customer Customer      @relation("CustomerRequests", fields: [customerId], references: [id])
+  vehicle  Vehicle       @relation(fields: [vehicleId], references: [id])
+  zone     ParkingZone?  @relation(fields: [zoneId], references: [id])
+  bay      ParkingBay?   @relation(fields: [bayId], references: [id])
+  slot     ParkingSlot?  @relation(fields: [slotId], references: [id])
 
   @@map("parking_requests")
 }

@@ -1,4 +1,4 @@
-import { PrismaClient, UserType, AccountStatus, SlotStatus, TicketStatus, PaymentMethod, ViolationStatus, ActionType, ActionStatus, PaymentStatus, AppealStatus, RequestStatus } from '@prisma/client'
+import { PrismaClient, StaffRole, AccountStatus, SlotStatus, TicketStatus, PaymentMethod, ViolationStatus, ActionType, ActionStatus, PaymentStatus, AppealStatus, RequestStatus } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 import 'dotenv/config'
@@ -13,18 +13,18 @@ async function main() {
   // -------------------------------------------------------------------------
   // 1. IDENTITY & ACCESS MANAGEMENT
   // -------------------------------------------------------------------------
-  console.log('👥 Seeding Users...')
+  console.log('👥 Seeding Staff and Customers...')
 
-  const staff = [
-    { email: 'admin@laspa.lagos.gov.ng', firstName: 'System', lastName: 'Admin', type: UserType.ADMIN },
-    { email: 'agent@laspa.lagos.gov.ng', firstName: 'Parking', lastName: 'Agent', type: UserType.PARKING_AGENT },
-    { email: 'officer.ade@laspa.lagos.gov.ng', firstName: 'Ade', lastName: 'Olawale', type: UserType.ENFORCEMENT_AGENT },
-    { email: 'officer.chi@laspa.lagos.gov.ng', firstName: 'Chidi', lastName: 'Nnamdi', type: UserType.ENFORCEMENT_AGENT },
+  const staffData = [
+    { email: 'admin@laspa.lagos.gov.ng', firstName: 'System', lastName: 'Admin', role: StaffRole.ADMIN },
+    { email: 'agent@laspa.lagos.gov.ng', firstName: 'Parking', lastName: 'Agent', role: StaffRole.PARKING_AGENT },
+    { email: 'officer.ade@laspa.lagos.gov.ng', firstName: 'Ade', lastName: 'Olawale', role: StaffRole.ENFORCEMENT_AGENT },
+    { email: 'officer.chi@laspa.lagos.gov.ng', firstName: 'Chidi', lastName: 'Nnamdi', role: StaffRole.ENFORCEMENT_AGENT },
   ]
 
   const seededStaff = []
-  for (const s of staff) {
-    const user = await prisma.user.upsert({
+  for (const s of staffData) {
+    const staff = await prisma.staff.upsert({
       where: { email: s.email },
       update: {},
       create: {
@@ -32,22 +32,22 @@ async function main() {
         firstName: s.firstName,
         lastName: s.lastName,
         phoneNumber: `+23480${Math.floor(10000000 + Math.random() * 90000000)}`,
-        userType: s.type,
+        role: s.role,
         accountStatus: AccountStatus.ACTIVE,
       },
     })
-    seededStaff.push(user)
+    seededStaff.push(staff)
   }
 
-  const customers = [
+  const customersData = [
     { email: 'john.doe@gmail.com', firstName: 'John', lastName: 'Doe' },
     { email: 'jane.smith@yahoo.com', firstName: 'Jane', lastName: 'Smith' },
     { email: 'tunde.bakare@outlook.com', firstName: 'Tunde', lastName: 'Bakare' },
   ]
 
   const seededCustomers = []
-  for (const c of customers) {
-    const user = await prisma.user.upsert({
+  for (const c of customersData) {
+    const customer = await prisma.customer.upsert({
       where: { email: c.email },
       update: {},
       create: {
@@ -55,12 +55,11 @@ async function main() {
         firstName: c.firstName,
         lastName: c.lastName,
         phoneNumber: `+23470${Math.floor(10000000 + Math.random() * 90000000)}`,
-        userType: UserType.CUSTOMER,
         accountStatus: AccountStatus.ACTIVE,
         customerReferenceId: `CUST-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
       },
     })
-    seededCustomers.push(user)
+    seededCustomers.push(customer)
   }
 
   // -------------------------------------------------------------------------
@@ -77,7 +76,7 @@ async function main() {
       update: {},
       create: {
         plateNumber: plateNumbers[i],
-        userId: owner.id,
+        customerId: owner.id,
         plateCode: plateNumbers[i].split('-')[0],
         plateSource: 'Lagos',
         plateType: 'Private',
@@ -222,7 +221,7 @@ async function main() {
     seededVTypes.push(type)
   }
 
-  const officers = seededStaff.filter(s => s.userType === UserType.ENFORCEMENT_AGENT)
+  const officers = seededStaff.filter(s => s.role === StaffRole.ENFORCEMENT_AGENT)
   const zones = await prisma.parkingZone.findMany()
 
   for (let v = 0; v < 15; v++) {
@@ -235,7 +234,7 @@ async function main() {
     const violation = await prisma.customerViolation.create({
       data: {
         referenceId: `VIO-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-        userId: customer.id,
+        customerId: customer.id,
         vehicleId: vehicle.id,
         violationTypeId: type.id,
         zoneId: zone.id,
@@ -275,7 +274,7 @@ async function main() {
       await prisma.appeal.create({
         data: {
           violationId: violation.id,
-          userId: customer.id,
+          customerId: customer.id,
           appealReason: "I was only there for 2 minutes to drop off a medical delivery.",
           status: AppealStatus.PENDING
         }
