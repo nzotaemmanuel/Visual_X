@@ -47,8 +47,8 @@ export const NAV_ITEMS = [
         variant: "ghost",
     },
     {
-        title: "User Management",
-        href: "/users",
+        title: "Staff Management",
+        href: "/staff",
         icon: Users,
         variant: "ghost",
     },
@@ -60,7 +60,7 @@ export const NAV_ITEMS = [
     },
 ];
 
-export const MOCK_USER = {
+export const MOCK_STAFF = {
     name: "Emmanuel Nzota",
     role: "Director of Operations",
     avatar: "/avatars/emmanuel.jpg", // Placeholder

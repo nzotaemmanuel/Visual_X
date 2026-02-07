@@ -29,11 +29,11 @@ interface Zone {
 
 interface DirectoryContainerProps {
     zones: Zone[];
-    initialMode?: "users" | "vehicles";
+    initialMode?: "staff" | "vehicles";
 }
 
-export function DirectoryContainer({ zones, initialMode = "users" }: DirectoryContainerProps) {
-    const [mode, setMode] = useState<"users" | "vehicles">(initialMode);
+export function DirectoryContainer({ zones, initialMode = "staff" }: DirectoryContainerProps) {
+    const [mode, setMode] = useState<"staff" | "vehicles">(initialMode);
     const [view, setView] = useState<"grid" | "list">("list");
     const [selectedZone, setSelectedZone] = useState("all");
     const { searchQuery } = useSearch();
@@ -69,24 +69,24 @@ export function DirectoryContainer({ zones, initialMode = "users" }: DirectoryCo
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-heading font-bold tracking-tight text-primary">
-                        {mode === "users" ? "User Directory" : "Vehicle Ecosystem"}
+                        {mode === "staff" ? "Staff Directory" : "Vehicle Ecosystem"}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        {mode === "users"
-                            ? "Manage Lagos State parking authorities and staff."
+                        {mode === "staff"
+                            ? "Manage parking agents, enforcement officers, and administrators."
                             : "Track registered vehicles and parking history."}
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2 bg-muted p-1 rounded-sm">
                     <button
-                        onClick={() => setMode("users")}
+                        onClick={() => setMode("staff")}
                         className={cn(
                             "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all",
-                            mode === "users" ? "bg-surface shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+                            mode === "staff" ? "bg-surface shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        Users
+                        Staff
                     </button>
                     <button
                         onClick={() => setMode("vehicles")}
@@ -135,13 +135,13 @@ export function DirectoryContainer({ zones, initialMode = "users" }: DirectoryCo
                     </div>
                     <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors">
                         <UserPlus className="h-4 w-4" />
-                        Add New {mode === "users" ? "Staff" : "Record"}
+                        Add New {mode === "staff" ? "Staff" : "Record"}
                     </button>
                 </div>
             </div>
 
             {/* Main Content Area */}
-            {mode === "users" ? (
+            {mode === "staff" ? (
                 /* Users Content */
                 view === "list" ? (
                     <div className="bg-surface border border-border overflow-hidden">
@@ -328,7 +328,7 @@ export function DirectoryContainer({ zones, initialMode = "users" }: DirectoryCo
             {/* Pagination/Status Footer */}
             <div className="flex items-center justify-between px-6 py-4 bg-surface border border-border -mt-4">
                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                    Showing {mode === "users" ? filteredUsers.length : filteredVehicles.length} results
+                    Showing {mode === "staff" ? filteredUsers.length : filteredVehicles.length} results
                 </p>
                 <div className="flex items-center gap-2">
                     <button className="px-3 py-1 bg-muted text-[10px] font-bold uppercase hover:bg-muted/80 transition-colors">Prev</button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, Menu } from "lucide-react";
-import { MOCK_USER } from "@/lib/constants";
+import { MOCK_STAFF } from "@/lib/constants";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { GlobalSearch } from "./GlobalSearch";
 import { usePathname } from "next/navigation";
@@ -31,18 +31,18 @@ export function Header() {
                     </span>
                 </button>
 
-                {/* User Profile */}
+                {/* Staff Profile */}
                 <div className="flex items-center gap-3 border-l border-border pl-4">
                     <div className="text-right hidden sm:block">
                         <p className="text-sm font-medium leading-none text-foreground">
-                            {MOCK_USER.name}
+                            {MOCK_STAFF.name}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {MOCK_USER.role}
+                            {MOCK_STAFF.role}
                         </p>
                     </div>
                     <div className="flex h-9 w-9 items-center justify-center rounded-none bg-primary text-primary-foreground font-medium text-sm">
-                        {MOCK_USER.initials}
+                        {MOCK_STAFF.initials}
                     </div>
                 </div>
             </div>
