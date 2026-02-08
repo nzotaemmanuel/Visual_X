@@ -1,3 +1,5 @@
+"use client";
+
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { useState } from "react";
 
@@ -51,9 +53,15 @@ function ReportsControls() {
             <div className="bg-surface border border-border p-6">
                 <h3 className="text-lg font-heading font-bold mb-2">Transactions Export</h3>
                 <p className="text-sm text-muted-foreground mb-4">Export the full transaction history. Use the date fields to restrict the export.</p>
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <div className="flex-1">
+                        <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">From</label>
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input w-full" />
+                    </div>
+                    <div className="flex-1">
+                        <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">To</label>
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input w-full" />
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={exportTransactions} disabled={loading} className="btn-primary">
