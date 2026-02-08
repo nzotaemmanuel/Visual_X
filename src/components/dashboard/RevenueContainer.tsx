@@ -68,7 +68,28 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="hidden md:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-xs font-bold text-muted-foreground hover:border-primary/50 transition-colors uppercase tracking-wider">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const params = new URLSearchParams();
+                                if (selectedZone !== 'all') params.append('zoneId', selectedZone);
+                                const res = await fetch(`/api/reports/transactions?${params.toString()}`);
+                                if (!res.ok) throw new Error('Export failed');
+                                const blob = await res.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'transactions.csv';
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
+                                window.URL.revokeObjectURL(url);
+                            } catch (err) {
+                                console.error('Export failed', err);
+                            }
+                        }}
+                        className="hidden md:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-xs font-bold text-muted-foreground hover:border-primary/50 transition-colors uppercase tracking-wider"
+                    >
                         <Download className="h-4 w-4" />
                         Export Report
                     </button>
@@ -138,7 +159,28 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                         </table>
                     </div>
                     <div className="p-4 bg-muted/10 border-t border-border flex justify-center">
-                        <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const params = new URLSearchParams();
+                                    if (selectedZone !== 'all') params.append('zoneId', selectedZone);
+                                    const res = await fetch(`/api/reports/transactions?${params.toString()}`);
+                                    if (!res.ok) throw new Error('Export failed');
+                                    const blob = await res.blob();
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'transactions.csv';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    a.remove();
+                                    window.URL.revokeObjectURL(url);
+                                } catch (err) {
+                                    console.error('Export failed', err);
+                                }
+                            }}
+                            className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline"
+                        >
                             Load Full Transaction History
                         </button>
                     </div>

@@ -108,7 +108,26 @@ export function TopZones({ zones }: TopZonesProps) {
             </div>
 
             <div className="p-4 bg-muted/10 border-t border-border mt-auto">
-                <button className="w-full py-2 text-xs font-bold text-primary hover:bg-primary/5 transition-colors rounded">
+                <button
+                    onClick={async () => {
+                        try {
+                            const res = await fetch('/api/reports/top-zones');
+                            if (!res.ok) throw new Error('Failed to download');
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'top-zones.csv';
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            window.URL.revokeObjectURL(url);
+                        } catch (err) {
+                            console.error('Export failed', err);
+                        }
+                    }}
+                    className="w-full py-2 text-xs font-bold text-primary hover:bg-primary/5 transition-colors rounded"
+                >
                     View Full Leaderboard
                 </button>
             </div>
