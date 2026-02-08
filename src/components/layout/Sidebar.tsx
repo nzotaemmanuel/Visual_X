@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/constants";
 import NextImage from "next/image";
-import { LucideIcon, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { LucideIcon, ChevronLeft, ChevronRight, LogOut, RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
+import { useState } from "react";
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -16,6 +17,25 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefreshRole = async () => {
+        setIsRefreshing(true);
+        try {
+            // Fetch updated user from a new endpoint
+            const response = await fetch('/api/me');
+            if (response.ok) {
+                const updatedUser = await response.json();
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                // Force re-render by updating context
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Failed to refresh user role:', error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     return (
         <aside className={cn(
@@ -75,20 +95,32 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 {user && (
                     <div className={cn(
                         "flex items-center gap-3 overflow-hidden rounded-lg border border-border bg-muted/30 p-3 transition-all duration-300",
-                        isCollapsed ? "justify-center" : "justify-start"
+                        isCollapsed ? "justify-center" : "justify-between"
                     )}>
-                        <div className="h-10 w-10 rounded-full bg-primary/20 text-primary font-semibold text-sm flex items-center justify-center shrink-0 flex-none">
-                            {user.firstName?.[0]}{user.lastName?.[0]}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="h-10 w-10 rounded-full bg-primary/20 text-primary font-semibold text-sm flex items-center justify-center shrink-0 flex-none">
+                                {user.firstName?.[0]}{user.lastName?.[0]}
+                            </div>
+                            {!isCollapsed && (
+                                <div className="hidden flex-1 lg:block min-w-0">
+                                    <p className="text-xs font-semibold text-foreground truncate">
+                                        {user.firstName} {user.lastName}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground truncate capitalize">
+                                        {user.role.replace(/_/g, ' ')}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         {!isCollapsed && (
-                            <div className="hidden flex-1 lg:block min-w-0">
-                                <p className="text-xs font-semibold text-foreground truncate">
-                                    {user.firstName} {user.lastName}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground truncate capitalize">
-                                    {user.role.replace(/_/g, ' ')}
-                                </p>
-                            </div>
+                            <button
+                                onClick={handleRefreshRole}
+                                disabled={isRefreshing}
+                                className="p-1 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                                title="Refresh role"
+                            >
+                                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                            </button>
                         )}
                     </div>
                 )}
