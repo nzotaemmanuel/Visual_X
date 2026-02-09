@@ -54,6 +54,8 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
         fetchTransactions();
     }, [selectedZone]);
 
+    const [isExporting, setIsExporting] = useState(false);
+
     return (
         <div className="flex flex-col gap-8">
             {/* Header Section */}
@@ -71,6 +73,7 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                     <button
                         onClick={async () => {
                             try {
+                                setIsExporting(true);
                                 const params = new URLSearchParams();
                                 if (selectedZone !== 'all') params.append('zoneId', selectedZone);
                                 const res = await fetch(`/api/reports/transactions?${params.toString()}`);
@@ -79,19 +82,30 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                                 const url = window.URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
-                                a.download = 'transactions.csv';
+                                a.download = `revenue_report_${new Date().toISOString().split('T')[0]}.csv`;
                                 document.body.appendChild(a);
                                 a.click();
                                 a.remove();
                                 window.URL.revokeObjectURL(url);
                             } catch (err) {
                                 console.error('Export failed', err);
+                                alert('Failed to export report. Please try again.');
+                            } finally {
+                                setIsExporting(false);
                             }
                         }}
-                        className="hidden md:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-xs font-bold text-muted-foreground hover:border-primary/50 transition-colors uppercase tracking-wider"
+                        disabled={isExporting}
+                        className={cn(
+                            "hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 hover:shadow-md transition-all uppercase tracking-wider rounded-md shadow-sm border border-emerald-700/50",
+                            isExporting && "opacity-75 cursor-wait"
+                        )}
                     >
-                        <Download className="h-4 w-4" />
-                        Export Report
+                        {isExporting ? (
+                            <Clock className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="h-4 w-4" />
+                        )}
+                        {isExporting ? 'Exporting...' : 'Export Report'}
                     </button>
                     <ZoneFilter
                         zones={filteredZones}

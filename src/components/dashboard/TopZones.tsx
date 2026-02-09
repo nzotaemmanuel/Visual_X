@@ -13,17 +13,8 @@ interface ZoneRank {
     progress: number;
 }
 
-interface Zone {
-    id: number;
-    zoneCode: string;
-    zoneName: string;
-}
+export function TopZones() {
 
-interface TopZonesProps {
-    zones: Zone[];
-}
-
-export function TopZones({ zones }: TopZonesProps) {
     const [topZones, setTopZones] = useState<ZoneRank[]>([]);
     const [loading, setLoading] = useState(false);
 

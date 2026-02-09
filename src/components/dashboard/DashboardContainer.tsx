@@ -58,7 +58,7 @@ export function DashboardContainer({ zones, recentOperations = [] }: DashboardCo
                     <RevenueChart selectedZone={selectedZone} />
                 </div>
                 <div className="lg:col-span-4">
-                    <TopZones zones={zones} />
+                    <TopZones />
                 </div>
             </div>
 

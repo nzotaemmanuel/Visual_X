@@ -92,7 +92,7 @@ export function EnforcementContainer({ zones }: EnforcementContainerProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="hidden md:flex items-center gap-2 px-3 py-2 bg-surface border border-border text-xs font-bold text-muted-foreground hover:border-primary/50 transition-colors uppercase tracking-wider">
+                    <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 hover:shadow-md transition-all uppercase tracking-wider rounded-md shadow-sm border border-emerald-700/50">
                         <Download className="h-4 w-4" />
                         Compliance Report
                     </button>
