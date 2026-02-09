@@ -42,6 +42,7 @@ export function EnforcementContainer({ zones }: EnforcementContainerProps) {
     const { searchQuery } = useSearch();
     const [enforcementActions, setEnforcementActions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const filteredZones = useMemo(() => {
         if (!searchQuery) return zones;
@@ -92,9 +93,42 @@ export function EnforcementContainer({ zones }: EnforcementContainerProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 hover:shadow-md transition-all uppercase tracking-wider rounded-md shadow-sm border border-emerald-700/50">
-                        <Download className="h-4 w-4" />
-                        Compliance Report
+                    <button
+                        onClick={async () => {
+                            try {
+                                setIsExporting(true);
+                                const params = new URLSearchParams();
+                                if (selectedZone !== 'all') params.append('zoneId', selectedZone);
+                                const res = await fetch(`/api/reports/compliance?${params.toString()}`);
+                                if (!res.ok) throw new Error('Export failed');
+                                const blob = await res.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `compliance_report_${new Date().toISOString().split('T')[0]}.csv`;
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
+                                window.URL.revokeObjectURL(url);
+                            } catch (err) {
+                                console.error('Export failed', err);
+                                alert('Failed to export compliance report.');
+                            } finally {
+                                setIsExporting(false);
+                            }
+                        }}
+                        disabled={isExporting}
+                        className={cn(
+                            "hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 hover:shadow-md transition-all uppercase tracking-wider rounded-md shadow-sm border border-emerald-700/50",
+                            isExporting && "opacity-75 cursor-wait"
+                        )}
+                    >
+                        {isExporting ? (
+                            <Clock className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Download className="h-4 w-4" />
+                        )}
+                        {isExporting ? 'Exporting...' : 'Compliance Report'}
                     </button>
                     <ZoneFilter
                         zones={filteredZones}
