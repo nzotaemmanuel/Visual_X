@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { prisma } from '../src/lib/db.ts';
+import { prisma } from '../src/lib/db';
 
 async function run() {
   const email = process.argv[2] || 'admin@laspa.gov.ng';
