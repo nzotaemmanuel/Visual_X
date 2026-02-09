@@ -55,22 +55,47 @@ function ReportsControls() {
             <div className="bg-surface border border-border p-6">
                 <h3 className="text-lg font-heading font-bold mb-2">Transactions Export</h3>
                 <p className="text-sm text-muted-foreground mb-4">Export the full transaction history. Use the date fields to restrict the export.</p>
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                    <div className="flex-1">
-                        <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">From</label>
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input w-full" />
+                <div className="flex flex-col gap-6 mb-6">
+                    {/* Row 1: Date Inputs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">From</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full h-10 px-3 bg-background border border-border rounded text-sm focus:outline-none focus:border-primary transition-colors"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">To</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full h-10 px-3 bg-background border border-border rounded text-sm focus:outline-none focus:border-primary transition-colors"
+                            />
+                        </div>
                     </div>
-                    <div className="flex-1">
-                        <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">To</label>
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input w-full" />
+
+                    {/* Row 2: Action Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-start">
+                        <button
+                            onClick={exportTransactions}
+                            disabled={loading}
+                            className="h-10 px-4 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full whitespace-nowrap"
+                        >
+                            <Download className="h-4 w-4" />
+                            {loading ? 'Processing...' : 'Download Transactions (CSV)'}
+                        </button>
+
+                        <button
+                            onClick={() => { setStartDate(''); setEndDate(''); }}
+                            className="h-10 px-4 border border-red-200 bg-background hover:bg-red-50 text-red-600 text-xs font-bold uppercase tracking-wider rounded transition-colors w-full sm:w-auto"
+                        >
+                            Clear
+                        </button>
                     </div>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={exportTransactions} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors disabled:opacity-50">
-                        <Download className="h-4 w-4" />
-                        {loading ? 'Preparing…' : 'Download Transactions (CSV)'}
-                    </button>
-                    <button onClick={() => { setStartDate(''); setEndDate(''); }} className="btn-secondary">Clear</button>
                 </div>
             </div>
         </div>
