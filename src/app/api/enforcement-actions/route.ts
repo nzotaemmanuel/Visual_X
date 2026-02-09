@@ -5,7 +5,16 @@ export async function GET(request: NextRequest) {
   try {
     const zoneId = request.nextUrl.searchParams.get('zoneId');
 
-    const query: any = {
+    const whereClause = zoneId && zoneId !== 'all'
+      ? {
+        violation: {
+          zoneId: parseInt(zoneId),
+        },
+      }
+      : undefined;
+
+    const actions = await prisma.enforcementAction.findMany({
+      where: whereClause,
       include: {
         violation: {
           include: {
@@ -17,17 +26,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { requestedAt: 'desc' },
       take: 10,
-    };
-
-    if (zoneId && zoneId !== 'all') {
-      query.where = {
-        violation: {
-          zoneId: parseInt(zoneId),
-        },
-      };
-    }
-
-    const actions = await prisma.enforcementAction.findMany(query);
+    });
 
     const enforcementData = actions.map((action) => ({
       id: action.referenceId,
