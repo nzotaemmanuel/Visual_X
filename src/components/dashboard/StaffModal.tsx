@@ -4,12 +4,15 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateStaff } from "@/app/actions/staff";
-import { AccountStatus } from "@prisma/client";
-
-enum StaffRole {
+export enum StaffRole {
     ADMIN = "ADMIN",
     PARKING_AGENT = "PARKING_AGENT",
     ENFORCEMENT_AGENT = "ENFORCEMENT_AGENT",
+}
+
+export enum AccountStatus {
+    ACTIVE = "ACTIVE",
+    SUSPENDED = "SUSPENDED",
 }
 
 interface Staff {

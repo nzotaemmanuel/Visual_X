@@ -23,7 +23,27 @@ import {
     Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Staff } from "@prisma/client";
+// import { Staff } from "@prisma/client";
+
+interface Staff {
+    id: number;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    phoneNumber: string | null;
+    role: string;
+    accountStatus: string;
+    isActive: boolean;
+    lastActiveAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    passwordHash: string;
+    // Mock data properties if needed
+    name?: string;
+    zone?: string;
+    status?: string;
+    rating?: number;
+}
 
 interface Zone {
     id: string;
