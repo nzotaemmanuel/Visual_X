@@ -2,6 +2,7 @@
 
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { useState } from "react";
+import { Download } from "lucide-react";
 
 function ReportsControls() {
     const [startDate, setStartDate] = useState<string>('');
@@ -45,7 +46,8 @@ function ReportsControls() {
             <div className="bg-surface border border-border p-6">
                 <h3 className="text-lg font-heading font-bold mb-2">Top Zones Leaderboard</h3>
                 <p className="text-sm text-muted-foreground mb-4">Download the full leaderboard of zones with revenue and occupancy.</p>
-                <button onClick={exportTopZones} disabled={loading} className="btn-primary">
+                <button onClick={exportTopZones} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    <Download className="h-4 w-4" />
                     {loading ? 'Preparing…' : 'Download Top Zones (CSV)'}
                 </button>
             </div>
@@ -64,7 +66,8 @@ function ReportsControls() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={exportTransactions} disabled={loading} className="btn-primary">
+                    <button onClick={exportTransactions} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors disabled:opacity-50">
+                        <Download className="h-4 w-4" />
                         {loading ? 'Preparing…' : 'Download Transactions (CSV)'}
                     </button>
                     <button onClick={() => { setStartDate(''); setEndDate(''); }} className="btn-secondary">Clear</button>

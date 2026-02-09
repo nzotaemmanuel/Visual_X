@@ -179,8 +179,9 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                                     console.error('Export failed', err);
                                 }
                             }}
-                            className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors"
                         >
+                            <Download className="h-4 w-4" />
                             Load Full Transaction History
                         </button>
                     </div>

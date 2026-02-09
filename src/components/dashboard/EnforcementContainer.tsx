@@ -232,7 +232,8 @@ export function EnforcementContainer({ zones }: EnforcementContainerProps) {
                         </table>
                     </div>
                     <div className="p-4 bg-muted/10 border-t border-border flex justify-center">
-                        <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors">
+                            <Download className="h-4 w-4" />
                             View Full Enforcement Log
                         </button>
                     </div>

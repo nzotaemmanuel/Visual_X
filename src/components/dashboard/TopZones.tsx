@@ -1,6 +1,6 @@
 "use client";
 
-import { Trophy, TrendingUp, TrendingDown } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
@@ -126,8 +126,9 @@ export function TopZones({ zones }: TopZonesProps) {
                             console.error('Export failed', err);
                         }
                     }}
-                    className="w-full py-2 text-xs font-bold text-primary hover:bg-primary/5 transition-colors rounded"
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-primary text-primary-foreground font-bold text-xs rounded hover:bg-primary/90 transition-colors"
                 >
+                    <Download className="h-4 w-4" />
                     View Full Leaderboard
                 </button>
             </div>
