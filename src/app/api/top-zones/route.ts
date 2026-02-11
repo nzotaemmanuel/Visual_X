@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { Decimal } from '@prisma/client/runtime/library';
 
 export async function GET(request: NextRequest) {
   try {

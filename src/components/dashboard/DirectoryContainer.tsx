@@ -27,18 +27,18 @@ import { cn } from "@/lib/utils";
 
 interface Staff {
     id: number;
-    firstName: string | null;
-    lastName: string | null;
+    firstName: string;
+    lastName: string;
     email: string;
-    phoneNumber: string | null;
+    phoneNumber: string;
     role: string;
     accountStatus: string;
-    isActive: boolean;
-    lastActiveAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
-    passwordHash: string;
-    // Mock data properties if needed
+    // Optional properties for UI/Mock compatibility
+    passwordHash?: string;
+    isActive?: boolean;
+    lastActiveAt?: Date | null;
     name?: string;
     zone?: string;
     status?: string;

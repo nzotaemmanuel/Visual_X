@@ -28,20 +28,17 @@ export async function GET(request: NextRequest) {
         const header = ['transactionRef', 'zoneId', 'bayId', 'amountPaid', 'channel', 'status', 'createdAt', 'customerId', 'customerName'];
         controller.enqueue(header.join(',') + '\n');
 
+        const includeClause = { bay: true, customer: true } as const;
+
         let lastId: any = undefined;
         while (true) {
-          const query: any = {
+          const batch = await prisma.parkingTicket.findMany({
             where,
-            include: { bay: true, customer: true },
+            include: includeClause,
             orderBy: { id: 'asc' },
             take: pageSize,
-          };
-          if (lastId) {
-            query.cursor = { id: lastId };
-            query.skip = 1;
-          }
-
-          const batch = await prisma.parkingTicket.findMany(query);
+            ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
+          });
           if (batch.length === 0) break;
 
           for (const t of batch) {

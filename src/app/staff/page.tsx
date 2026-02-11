@@ -2,6 +2,8 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DirectoryContainer } from "@/components/dashboard/DirectoryContainer";
 import { getZones, getStaffList } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
     title: "Staff Management | LASPA Analytics",
     description: "Manage administrators, parking agents, and enforcement officers.",

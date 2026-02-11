@@ -2,6 +2,8 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DashboardContainer } from "@/components/dashboard/DashboardContainer";
 import { getZones, getRecentOperations } from "./actions/zones";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <DashboardShell>

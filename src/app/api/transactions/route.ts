@@ -5,29 +5,30 @@ export async function GET(request: NextRequest) {
   try {
     const zoneId = request.nextUrl.searchParams.get('zoneId');
 
-    const query: any = {
-      include: {
-        customer: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    };
+    const includeClause = {
+      customer: true,
+      bay: {
+        include: {
+          zone: true
+        }
+      }
+    } as const;
 
-    if (zoneId && zoneId !== 'all') {
-      // Filter by zone through parking bay
-      query.where = {
+    const tickets = await prisma.parkingTicket.findMany({
+      where: zoneId && zoneId !== 'all' ? {
         bay: {
           zoneId: parseInt(zoneId),
         },
-      };
-    }
-
-    const tickets = await prisma.parkingTicket.findMany(query);
+      } : undefined,
+      include: includeClause,
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
 
     const transactions = tickets.map((ticket) => ({
       id: ticket.transactionRef,
-      zone: ticket.bay?.id ? 'Zone' : 'Unknown', // Would need bay data for zone name
-      amount: `₦ ${ticket.amountPaid.toLocaleString()}`,
+      zone: ticket.bay?.zone.zoneName || 'Unknown',
+      amount: `₦ ${Number(ticket.amountPaid).toLocaleString()}`,
       channel: ticket.channel || 'Web',
       status: ticket.status === 'ACTIVE' ? 'Success' : 'Completed',
       time: new Date(ticket.createdAt).toLocaleTimeString(),

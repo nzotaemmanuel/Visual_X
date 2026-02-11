@@ -5,6 +5,17 @@ export async function GET(request: NextRequest) {
   try {
     const zoneId = request.nextUrl.searchParams.get('zoneId');
 
+    // Define include structure as const for proper type inference
+    const includeClause = {
+      violation: {
+        include: {
+          vehicle: true,
+          zone: true,
+        },
+      },
+      requester: true,
+    } as const;
+
     const whereClause = zoneId && zoneId !== 'all'
       ? {
         violation: {
@@ -15,15 +26,7 @@ export async function GET(request: NextRequest) {
 
     const actions = await prisma.enforcementAction.findMany({
       where: whereClause,
-      include: {
-        violation: {
-          include: {
-            vehicle: true,
-            zone: true,
-          },
-        },
-        requester: true,
-      },
+      include: includeClause,
       orderBy: { requestedAt: 'desc' },
       take: 10,
     });

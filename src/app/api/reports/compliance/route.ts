@@ -44,27 +44,23 @@ export async function GET(request: NextRequest) {
                 ];
                 controller.enqueue(header.join(',') + '\n');
 
+                const includeClause = {
+                    vehicle: true,
+                    zone: true,
+                    violationType: true,
+                    enforcementOfficer: true,
+                    actions: true
+                } as const;
+
                 let lastId: any = undefined;
                 while (true) {
-                    const query: any = {
+                    const batch = await prisma.customerViolation.findMany({
                         where,
-                        include: {
-                            vehicle: true,
-                            zone: true,
-                            violationType: true,
-                            enforcementOfficer: true,
-                            actions: true // Include related actions like Clamp/Tow
-                        },
+                        include: includeClause,
                         orderBy: { id: 'asc' },
                         take: pageSize,
-                    };
-
-                    if (lastId) {
-                        query.cursor = { id: lastId };
-                        query.skip = 1;
-                    }
-
-                    const batch = await prisma.customerViolation.findMany(query);
+                        ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
+                    });
                     if (batch.length === 0) break;
 
                     for (const v of batch as any[]) {
