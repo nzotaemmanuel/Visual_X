@@ -57,7 +57,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             )}>
                 <div className="relative h-10 w-10 shrink-0">
                     <NextImage
-                        src="/logo.png"
+                        src="/laspa-logo.png"
                         alt="LASPA Logo"
                         fill
                         className="object-contain"

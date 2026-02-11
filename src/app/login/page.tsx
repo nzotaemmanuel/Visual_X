@@ -56,7 +56,7 @@ export default function LoginPage() {
         <div className="mb-8 flex justify-center">
           <div className="relative h-16 w-16">
             <Image
-              src="/logo.png"
+              src="/laspa-logo.png"
               alt="LASPA Logo"
               fill
               className="object-contain"

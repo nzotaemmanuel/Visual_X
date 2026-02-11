@@ -21,7 +21,8 @@ export async function middleware(request: NextRequest) {
     PUBLIC_ROUTES.some((route) => pathname.startsWith(route)) ||
     pathname.includes('.') ||
     pathname.startsWith('/_next') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    pathname === '/laspa-logo.png'
   ) {
     return NextResponse.next();
   }
@@ -72,5 +73,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.png|.*\\.svg|.*\\.png|.*\\.jpg).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|laspa-logo.png|.*\\.svg|.*\\.png|.*\\.jpg).*)'],
 };
