@@ -16,8 +16,13 @@ const ROLE_RESTRICTED_ROUTES: Record<string, string[]> = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
-  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+  // Allow public routes and static assets
+  if (
+    PUBLIC_ROUTES.some((route) => pathname.startsWith(route)) ||
+    pathname.includes('.') ||
+    pathname.startsWith('/_next') ||
+    pathname === '/favicon.ico'
+  ) {
     return NextResponse.next();
   }
 
