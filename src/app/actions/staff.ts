@@ -11,6 +11,7 @@ export async function createStaff(data: {
     phoneNumber: string;
     role: StaffRole;
     accountStatus: AccountStatus;
+    zoneId?: number;
     password?: string;
 }) {
     try {
@@ -62,6 +63,7 @@ export async function createStaff(data: {
                     phoneNumber: data.phoneNumber,
                     role: data.role,
                     accountStatus: data.accountStatus,
+                    zoneId: data.zoneId,
                 }
             });
 
@@ -84,6 +86,7 @@ export async function updateStaff(
         phoneNumber?: string;
         role?: StaffRole;
         accountStatus?: AccountStatus;
+        zoneId?: number | null;
     }
 ) {
     try {

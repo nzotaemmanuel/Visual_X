@@ -90,6 +90,8 @@ model Staff {
   accountStatus      AccountStatus       @default(ACTIVE) @map("account_status")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
+  zoneId             Int?                @map("zone_id")
+  zone               ParkingZone?        @relation(fields: [zoneId], references: [id])
   reviewedAppeals    Appeal[]            @relation("ReviewerAppeals")
   violationsRecorded CustomerViolation[] @relation("OfficerViolations")
   requestedActions   EnforcementAction[]
@@ -124,6 +126,7 @@ model ParkingZone {
   violations       CustomerViolation[]
   bays             ParkingBay[]
   parkingRequests  ParkingRequest[]
+  staff            Staff[]
 
   @@map("parking_zones")
 }

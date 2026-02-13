@@ -40,7 +40,8 @@ interface Staff {
     isActive?: boolean;
     lastActiveAt?: Date | null;
     name?: string;
-    zone?: string;
+    zone?: { id: number; zoneName: string };
+    zoneId?: number;
     status?: string;
     rating?: number;
 }
@@ -245,7 +246,7 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-1.5">
                                                 <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                <span className="text-xs text-muted-foreground">{staff.phoneNumber}</span>
+                                                <span className="text-xs text-muted-foreground">{staff.zone?.zoneName || "N/A"}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -311,8 +312,8 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
                                             <span className="text-foreground text-[9px] normal-case lowercase">{staff.email}</span>
                                         </div>
                                         <div className="flex flex-col items-end gap-1">
-                                            <span>Phone</span>
-                                            <span className="text-foreground text-[9px]">{staff.phoneNumber}</span>
+                                            <span>Zone</span>
+                                            <span className="text-foreground text-[9px]">{staff.zone?.zoneName || "N/A"}</span>
                                         </div>
                                     </div>
 
@@ -441,6 +442,7 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
             {editingStaff && (
                 <StaffModal
                     staff={editingStaff as any}
+                    zones={zones as any}
                     isOpen={!!editingStaff}
                     onClose={() => setEditingStaff(null)}
                     onSave={() => setRefreshKey(prev => prev + 1)}
@@ -450,6 +452,7 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
             {isCreatingStaff && (
                 <StaffModal
                     isOpen={true}
+                    zones={zones as any}
                     onClose={() => setIsCreatingStaff(false)}
                     onSave={() => {
                         setRefreshKey(prev => prev + 1);

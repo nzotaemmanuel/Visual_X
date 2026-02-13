@@ -27,18 +27,20 @@ interface Staff {
     // Mock data properties
     name?: string;
     zone?: string;
-    status?: string;
     rating?: number;
+    zoneId?: number;
+    zone?: { id: number; zoneName: string };
 }
 
 interface StaffModalProps {
     staff?: Staff | null;
+    zones?: { id: string; zoneName: string }[];
     isOpen: boolean;
     onClose: () => void;
     onSave?: () => void;
 }
 
-export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) {
+export function StaffModal({ staff, zones = [], isOpen, onClose, onSave }: StaffModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<Staff>>(
@@ -50,6 +52,7 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
             role: StaffRole.PARKING_AGENT,
             accountStatus: AccountStatus.ACTIVE,
             password: "",
+            zoneId: undefined,
         }
     );
 
@@ -89,7 +92,8 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
                     phoneNumber: formData.phoneNumber,
                     role: formData.role || StaffRole.PARKING_AGENT,
                     accountStatus: formData.accountStatus || AccountStatus.ACTIVE,
-                    password: formData.password || "Laspa@123"
+                    password: formData.password || "Laspa@123",
+                    zoneId: formData.zoneId ? Number(formData.zoneId) : undefined,
                 };
 
                 result = await createStaff(createData);
@@ -241,6 +245,25 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
                                 <option value={AccountStatus.SUSPENDED}>Suspended</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                            Assigned Zone
+                        </label>
+                        <select
+                            name="zoneId"
+                            value={formData.zoneId || ""}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-muted border border-border rounded text-sm focus:outline-none focus:border-primary"
+                        >
+                            <option value="">No Zone Assigned</option>
+                            {zones.map(zone => (
+                                <option key={zone.id} value={zone.id}>
+                                    {zone.zoneName}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Actions */}
