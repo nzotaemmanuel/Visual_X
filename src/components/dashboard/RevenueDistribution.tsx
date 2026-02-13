@@ -56,7 +56,10 @@ export function RevenueDistribution() {
                     {CHANNEL_DATA.map((item) => (
                         <div key={item.name} className="flex flex-col">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{item.name}</span>
-                            <span className="text-sm font-bold text-foreground">₦ {(item.value / 1000000).toFixed(1)}M</span>
+                            <span className="text-sm font-bold text-foreground whitespace-nowrap">
+                                <span className="text-primary/70 mr-0.5">₦</span>
+                                {(item.value / 1000000).toFixed(1)}M
+                            </span>
                         </div>
                     ))}
                 </div>

@@ -145,7 +145,7 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                                 <tr>
                                     <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Transaction ID</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Zone/Bay</th>
-                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Amount</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-w-[120px]">Amount</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Channel</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
                                     <th className="px-6 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Time</th>
@@ -156,7 +156,10 @@ export function RevenueContainer({ zones }: RevenueContainerProps) {
                                     <tr key={row.id} className="hover:bg-muted/10 transition-colors group">
                                         <td className="px-6 py-4 text-xs font-bold text-foreground">{row.id}</td>
                                         <td className="px-6 py-4 text-xs text-muted-foreground underline decoration-primary/20 hover:decoration-primary transition-colors cursor-pointer">{row.zone}</td>
-                                        <td className="px-6 py-4 text-xs font-bold text-foreground">{row.amount}</td>
+                                        <td className="px-6 py-4 text-xs font-bold text-foreground whitespace-nowrap">
+                                            <span className="text-primary/70 mr-1">₦</span>
+                                            {row.amount.replace("₦", "").trim()}
+                                        </td>
                                         <td className="px-6 py-4 text-xs text-muted-foreground">{row.channel}</td>
                                         <td className="px-6 py-4">
                                             <span className={cn(

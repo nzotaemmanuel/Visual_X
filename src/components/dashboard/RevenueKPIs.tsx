@@ -79,10 +79,19 @@ export function RevenueKPIs({ selectedZone }: { selectedZone: string }) {
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{kpi.label}</span>
                         </div>
 
-                        <div className="flex items-baseline gap-2">
-                            <h3 className="text-3xl font-heading font-bold text-foreground">{displayValue}</h3>
+                        <div className="flex items-baseline gap-1">
+                            {displayValue.includes("₦") ? (
+                                <>
+                                    <span className="text-xl font-bold text-muted-foreground/70 mr-0.5">₦</span>
+                                    <h3 className="text-2xl lg:text-3xl font-heading font-bold text-foreground">
+                                        {displayValue.replace("₦", "").trim()}
+                                    </h3>
+                                </>
+                            ) : (
+                                <h3 className="text-3xl font-heading font-bold text-foreground">{displayValue}</h3>
+                            )}
                             <div className={cn(
-                                "flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                "flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ml-2",
                                 isGood ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
                             )}>
                                 {isPositive ? <TrendingUp className="h-2.5 w-2.5 mr-0.5" /> : <TrendingDown className="h-2.5 w-2.5 mr-0.5" />}
