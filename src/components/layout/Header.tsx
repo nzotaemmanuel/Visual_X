@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Bell, Menu } from "lucide-react";
 import { MOCK_STAFF } from "@/lib/constants";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -9,6 +10,30 @@ import { usePathname } from "next/navigation";
 export function Header() {
     const pathname = usePathname();
     const isHome = pathname === "/";
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error("Failed to parse user from localStorage", e);
+            }
+        }
+    }, []);
+
+    const displayName = user
+        ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email
+        : MOCK_STAFF.name;
+
+    const displayRole = user
+        ? user.role?.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())
+        : MOCK_STAFF.role;
+
+    const initials = user
+        ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || user.email?.slice(0, 2).toUpperCase()
+        : MOCK_STAFF.initials;
 
     return (
         <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-surface/80 px-6 backdrop-blur-sm transition-all">
@@ -35,14 +60,14 @@ export function Header() {
                 <div className="flex items-center gap-3 border-l border-border pl-4">
                     <div className="text-right hidden sm:block">
                         <p className="text-sm font-medium leading-none text-foreground">
-                            {MOCK_STAFF.name}
+                            {displayName}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {MOCK_STAFF.role}
+                            {displayRole}
                         </p>
                     </div>
                     <div className="flex h-9 w-9 items-center justify-center rounded-none bg-primary text-primary-foreground font-medium text-sm">
-                        {MOCK_STAFF.initials}
+                        {initials}
                     </div>
                 </div>
             </div>
