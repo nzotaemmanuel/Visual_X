@@ -99,12 +99,41 @@ export async function updateStaff(
 
 export async function deleteStaff(id: number) {
     try {
-        await prisma.staff.delete({
-            where: { id },
+        await prisma.$transaction(async (tx) => {
+            // First find the staff member to get their email
+            const staff = await tx.staff.findUnique({
+                where: { id },
+                select: { email: true }
+            });
+
+            if (!staff) {
+                throw new Error("Staff member not found");
+            }
+
+            // Delete the associated User record if it exists
+            await tx.user.deleteMany({
+                where: { email: staff.email }
+            });
+
+            // Delete the Staff record
+            await tx.staff.delete({
+                where: { id },
+            });
         });
+
         return { success: true };
-    } catch (error) {
-        return { success: false, error: "Failed to delete staff" };
+    } catch (error: any) {
+        console.error("Delete staff error:", error);
+
+        // Check for Prisma foreign key constraint errors (P2003)
+        if (error.code === 'P2003') {
+            return {
+                success: false,
+                error: "Cannot delete staff with recorded activity (violations, tickets, etc.). Please suspend the account instead."
+            };
+        }
+
+        return { success: false, error: error.message || "Failed to delete staff" };
     }
 }
 
