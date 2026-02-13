@@ -262,9 +262,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Signup Link */}
-
       </div>
+
+
 
       <style jsx global>{`
         @keyframes shake {
