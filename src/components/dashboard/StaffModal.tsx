@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateStaff } from "@/app/actions/staff";
+import { updateStaff, createStaff } from "@/app/actions/staff";
 export enum StaffRole {
     ADMIN = "ADMIN",
     PARKING_AGENT = "PARKING_AGENT",
@@ -65,22 +65,41 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
         setIsLoading(true);
 
         try {
-            if (!staff?.id) {
-                setError("Staff ID is required");
-                return;
-            }
+            let result;
 
-            const numericId = typeof staff.id === 'string' ? parseInt(staff.id) : staff.id;
-            const result = await updateStaff(numericId, formData);
+            if (staff?.id) {
+                const numericId = typeof staff.id === 'string' ? parseInt(staff.id) : staff.id;
+                // Only send changed fields or full data for update
+                result = await updateStaff(numericId, formData);
+            } else {
+                // Creation mode
+                if (!formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber) {
+                    setError("All fields are required");
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Construct create object ensuring types
+                const createData = {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    email: formData.email,
+                    phoneNumber: formData.phoneNumber,
+                    role: formData.role || StaffRole.PARKING_AGENT,
+                    accountStatus: formData.accountStatus || AccountStatus.ACTIVE
+                };
+
+                result = await createStaff(createData);
+            }
 
             if (result.success) {
                 onSave?.();
                 onClose();
             } else {
-                setError(result.error || "Failed to update staff");
+                setError(result.error || `Failed to ${staff?.id ? 'update' : 'create'} staff`);
             }
         } catch (err) {
-            setError("An error occurred while updating staff");
+            setError(`An error occurred while ${staff?.id ? 'updating' : 'creating'} staff`);
         } finally {
             setIsLoading(false);
         }

@@ -72,6 +72,7 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
     const [refreshKey, setRefreshKey] = useState(0);
     const [allVehicles, setAllVehicles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isCreatingStaff, setIsCreatingStaff] = useState(false);
 
     const filteredZones = useMemo(() => {
         if (!searchQuery) return zones;
@@ -195,7 +196,10 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
                             <List className="h-4 w-4" />
                         </button>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors">
+                    <button
+                        onClick={() => mode === "staff" ? setIsCreatingStaff(true) : null}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                    >
                         <UserPlus className="h-4 w-4" />
                         Add New {mode === "staff" ? "Staff" : "Record"}
                     </button>
@@ -443,13 +447,28 @@ export function DirectoryContainer({ zones, initialMode = "staff", staffData = [
                 />
             )}
 
+            {isCreatingStaff && (
+                <StaffModal
+                    isOpen={true}
+                    onClose={() => setIsCreatingStaff(false)}
+                    onSave={() => {
+                        setRefreshKey(prev => prev + 1);
+                        // Refresh logic would ideally re-fetch data here if it wasn't server-rendered
+                        window.location.reload();
+                    }}
+                />
+            )}
+
             {deletingStaff && (
                 <DeleteConfirmDialog
                     staffId={deletingStaff.id}
                     staffName={deletingStaff.displayName || `${deletingStaff.firstName} ${deletingStaff.lastName}`}
                     isOpen={!!deletingStaff}
                     onClose={() => setDeletingStaff(null)}
-                    onConfirm={() => setRefreshKey(prev => prev + 1)}
+                    onConfirm={() => {
+                        setRefreshKey(prev => prev + 1);
+                        window.location.reload();
+                    }}
                 />
             )}
         </div>

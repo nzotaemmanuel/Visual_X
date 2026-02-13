@@ -3,6 +3,24 @@
 import { prisma } from "@/lib/db";
 import { StaffRole, AccountStatus } from "@prisma/client";
 
+export async function createStaff(data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    role: StaffRole;
+    accountStatus: AccountStatus;
+}) {
+    try {
+        const staff = await prisma.staff.create({
+            data,
+        });
+        return { success: true, data: staff };
+    } catch (error) {
+        return { success: false, error: "Failed to create staff" };
+    }
+}
+
 export async function updateStaff(
     id: number,
     data: {
