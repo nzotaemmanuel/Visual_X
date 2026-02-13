@@ -110,12 +110,58 @@ export async function deleteStaff(id: number) {
                 throw new Error("Staff member not found");
             }
 
-            // Delete the associated User record if it exists
+            // --- CASCADING CLEANUP ---
+            // 1. Handle Appeals: Nullify reviewer links
+            await tx.appeal.updateMany({
+                where: { reviewerId: id },
+                data: { reviewerId: null }
+            });
+
+            // 2. Handle ParkingTickets: Nullify agent links
+            await tx.parkingTicket.updateMany({
+                where: { agentId: id },
+                data: { agentId: null }
+            });
+
+            // 3. Delete EnforcementActions requested by this staff
+            await tx.enforcementAction.deleteMany({
+                where: { requestedBy: id }
+            });
+
+            // 4. Handle CustomerViolations recorded by this staff
+            const violations = await tx.customerViolation.findMany({
+                where: { enforcementOfficerId: id },
+                select: { id: true }
+            });
+
+            const violationIds = violations.map(v => v.id);
+
+            if (violationIds.length > 0) {
+                // Delete children of these violations first
+                await tx.appeal.deleteMany({
+                    where: { violationId: { in: violationIds } }
+                });
+
+                await tx.fine.deleteMany({
+                    where: { violationId: { in: violationIds } }
+                });
+
+                await tx.enforcementAction.deleteMany({
+                    where: { violationId: { in: violationIds } }
+                });
+
+                // Finally delete the violations themselves
+                await tx.customerViolation.deleteMany({
+                    where: { id: { in: violationIds } }
+                });
+            }
+
+            // 5. Delete the associated User record
             await tx.user.deleteMany({
                 where: { email: staff.email }
             });
 
-            // Delete the Staff record
+            // 6. Delete the Staff record
             await tx.staff.delete({
                 where: { id },
             });
@@ -124,15 +170,6 @@ export async function deleteStaff(id: number) {
         return { success: true };
     } catch (error: any) {
         console.error("Delete staff error:", error);
-
-        // Check for Prisma foreign key constraint errors (P2003)
-        if (error.code === 'P2003') {
-            return {
-                success: false,
-                error: "Cannot delete staff with recorded activity (violations, tickets, etc.). Please suspend the account instead."
-            };
-        }
-
         return { success: false, error: error.message || "Failed to delete staff" };
     }
 }
