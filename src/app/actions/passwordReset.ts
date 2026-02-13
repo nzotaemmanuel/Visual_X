@@ -70,7 +70,7 @@ export async function requestPasswordReset(request: PasswordResetRequest): Promi
     });
 
     // Build reset link
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `http://localhost:3000`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://laspa-visual-x.vercel.app/`;
     const resetLink = `${appUrl}/reset-password/${resetToken}`;
 
     // Try to send email via SMTP if configured, otherwise log the link to console
@@ -85,7 +85,7 @@ export async function requestPasswordReset(request: PasswordResetRequest): Promi
         const transporter = nodemailer.createTransport({
           host,
           port,
-          secure: port === 465, // true for 465, false for other ports
+          secure: port === 587, // true for 587, false for other ports
           auth: {
             user: userAuth,
             pass: passAuth,
