@@ -263,14 +263,7 @@ export default function LoginPage() {
         </form>
 
         {/* Signup Link */}
-        <div className="mt-8 pt-6 border-t border-gray-800 text-center animate-in fade-in slide-in-from-bottom-2 duration-1000">
-          <p className="text-sm" style={{ color: '#A0A6AD' }}>
-            New to the Command Center?{' '}
-            <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-bold transition-colors underline-offset-4 hover:underline">
-              Create an account
-            </Link>
-          </p>
-        </div>
+
       </div>
 
       <style jsx global>{`
