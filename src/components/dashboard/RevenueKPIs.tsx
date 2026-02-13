@@ -15,11 +15,11 @@ interface RevenueKPIProps {
 
 const REVENUE_KPIS: RevenueKPIProps[] = [
     {
-        label: "Avg. Ticket Value",
-        value: "₦ 1,245",
-        description: "Mean revenue per parking session",
+        label: "Total Revenue Collected",
+        value: "₦ 12,450,000",
+        description: "Aggregate revenue from all sources",
         trend: "up",
-        trendValue: "+4.2%",
+        trendValue: "+15.2%",
         icon: Target,
         color: "primary",
     },
