@@ -64,7 +64,7 @@ export async function createStaff(data: {
                     role: data.role,
                     accountStatus: data.accountStatus,
                     zoneId: data.zoneId,
-                }
+                } as any
             });
 
             return staff;
@@ -92,7 +92,7 @@ export async function updateStaff(
     try {
         const updated = await prisma.staff.update({
             where: { id },
-            data,
+            data: data as any,
         });
         return { success: true, data: updated };
     } catch (error) {

@@ -27,7 +27,7 @@ export async function getStaffList() {
     const staff = await prisma.staff.findMany({
         orderBy: { firstName: 'asc' },
         include: { zone: true }
-    });
+    } as any);
     return staff;
 }
 
