@@ -23,6 +23,7 @@ interface Staff {
     phoneNumber?: string;
     role?: StaffRole;
     accountStatus?: AccountStatus;
+    password?: string;
     // Mock data properties
     name?: string;
     zone?: string;
@@ -48,6 +49,7 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
             phoneNumber: "",
             role: StaffRole.PARKING_AGENT,
             accountStatus: AccountStatus.ACTIVE,
+            password: "",
         }
     );
 
@@ -86,11 +88,13 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
                     email: formData.email,
                     phoneNumber: formData.phoneNumber,
                     role: formData.role || StaffRole.PARKING_AGENT,
-                    accountStatus: formData.accountStatus || AccountStatus.ACTIVE
+                    accountStatus: formData.accountStatus || AccountStatus.ACTIVE,
+                    password: formData.password || "Laspa@123"
                 };
 
                 result = await createStaff(createData);
             }
+
 
             if (result.success) {
                 onSave?.();
@@ -187,6 +191,24 @@ export function StaffModal({ staff, isOpen, onClose, onSave }: StaffModalProps) 
                             required
                         />
                     </div>
+
+                    {!staff?.id && (
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground uppercase mb-2">
+                                Password
+                            </label>
+                            <input
+                                type="password"
+                                name="password"
+                                value={formData.password || ""}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 bg-muted border border-border rounded text-sm focus:outline-none focus:border-primary"
+                                required
+                                minLength={6}
+                                placeholder="Set initial password"
+                            />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
