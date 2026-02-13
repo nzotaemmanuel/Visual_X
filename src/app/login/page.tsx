@@ -87,7 +87,8 @@ export default function LoginPage() {
         }
       }
     } catch (err: any) {
-      setError('An unexpected error occurred. Please try again.');
+      const errorMessage = err?.message || JSON.stringify(err) || 'Unknown error';
+      setError(`System Error: ${errorMessage}`);
       triggerShake();
       console.error('Login error:', err);
     } finally {

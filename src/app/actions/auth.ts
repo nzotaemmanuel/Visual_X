@@ -123,7 +123,7 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
     console.error('Login error:', error);
     return {
       success: false,
-      message: 'An error occurred during login. Please try again.',
+      message: `Login failed: ${error.message}`,
     };
   }
 }
