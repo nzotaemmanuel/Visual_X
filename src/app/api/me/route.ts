@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { dbQuerySingle } from '@/lib/db';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
@@ -24,16 +24,10 @@ export async function GET() {
     const userId = payload.userId as number;
 
     // Fetch updated user data from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-      },
-    });
+    const user = await dbQuerySingle(
+      'SELECT id, email, first_name, last_name, role FROM users WHERE id = $1',
+      [userId]
+    );
 
     if (!user) {
       return NextResponse.json(
@@ -42,7 +36,13 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role
+    });
   } catch (error: any) {
     console.error('Error fetching user:', error);
     return NextResponse.json(

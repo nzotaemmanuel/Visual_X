@@ -1,9 +1,10 @@
 'use server';
 
-import { prisma } from '@/lib/db';
-import { createPasswordReset, verifyPasswordReset, completePasswordReset, hashPassword } from '@/lib/auth';
+import { db, dbQuerySingle, dbTransaction } from '@/lib/db';
+import { hashPassword } from '@/lib/auth';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import { randomUUID } from 'crypto';
 
 export interface PasswordResetRequest {
   email: string;
@@ -38,9 +39,10 @@ export async function requestPasswordReset(request: PasswordResetRequest): Promi
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: request.email },
-    });
+    const user = await dbQuerySingle(
+      'SELECT * FROM users WHERE email = $1',
+      [request.email]
+    );
 
     // For security, always return success message (don't reveal if user exists)
     if (!user) {
@@ -54,20 +56,20 @@ export async function requestPasswordReset(request: PasswordResetRequest): Promi
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const id = randomUUID();
 
     // Clear previous reset requests
-    await prisma.passwordReset.deleteMany({
-      where: { userId: user.id },
-    });
+    await db.query(
+      'DELETE FROM password_resets WHERE user_id = $1',
+      [user.id]
+    );
 
     // Create new reset request
-    await prisma.passwordReset.create({
-      data: {
-        userId: user.id,
-        token: hashedToken,
-        expiresAt,
-      },
-    });
+    await db.query(
+      `INSERT INTO password_resets (id, user_id, token, expires_at, created_at)
+         VALUES ($1, $2, $3, $4, NOW())`,
+      [id, user.id, hashedToken, expiresAt]
+    );
 
     // Build reset link
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://laspa-visual-x.vercel.app/`;
@@ -158,18 +160,11 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<Rese
     const hashedToken = crypto.createHash('sha256').update(request.token).digest('hex');
 
     // Find reset request
-    const resetRequest = await prisma.passwordReset.findFirst({
-      where: {
-        token: hashedToken,
-        usedAt: null, // Not yet used
-        expiresAt: {
-          gt: new Date(), // Not expired
-        },
-      },
-      include: {
-        user: true,
-      },
-    });
+    const resetRequest = await dbQuerySingle(
+      `SELECT * FROM password_resets 
+         WHERE token = $1 AND used_at IS NULL AND expires_at > NOW()`,
+      [hashedToken]
+    );
 
     if (!resetRequest) {
       return {
@@ -182,16 +177,16 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<Rese
     const newPasswordHash = await hashPassword(request.newPassword);
 
     // Update user password and reset request
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: resetRequest.userId },
-        data: { passwordHash: newPasswordHash },
-      }),
-      prisma.passwordReset.update({
-        where: { id: resetRequest.id },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+    await dbTransaction(async (client) => {
+      await client.query(
+        'UPDATE users SET password_hash = $1 WHERE id = $2',
+        [newPasswordHash, resetRequest.user_id]
+      );
+      await client.query(
+        'UPDATE password_resets SET used_at = NOW() WHERE id = $1',
+        [resetRequest.id]
+      );
+    });
 
     return {
       success: true,

@@ -1,60 +1,58 @@
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const zones = await prisma.parkingZone.findMany({
-      orderBy: { zoneName: 'asc' },
+    // Optimized single query for revenue and occupancy
+    const query = `
+      WITH ZoneRevenue AS (
+        SELECT 
+          pb.zone_id,
+          COALESCE(SUM(pt.amount_paid), 0) as total_revenue
+        FROM parking_tickets pt
+        JOIN parking_bays pb ON pt.bay_id = pb.id
+        GROUP BY pb.zone_id
+      ),
+      ZoneOccupancy AS (
+        SELECT
+          pb.zone_id,
+          COUNT(ps.id) as total_slots,
+          COUNT(CASE WHEN ps.status = 'OCCUPIED' THEN 1 END) as occupied_slots
+        FROM parking_slots ps
+        JOIN parking_bays pb ON ps.bay_id = pb.id
+        GROUP BY pb.zone_id
+      )
+      SELECT
+        pz.id,
+        pz.zone_name,
+        COALESCE(zr.total_revenue, 0) as revenue,
+        COALESCE(zo.total_slots, 0) as total_slots,
+        COALESCE(zo.occupied_slots, 0) as occupied_slots
+      FROM parking_zones pz
+      LEFT JOIN ZoneRevenue zr ON pz.id = zr.zone_id
+      LEFT JOIN ZoneOccupancy zo ON pz.id = zo.zone_id
+      ORDER BY revenue DESC
+      LIMIT 4
+    `;
+
+    const result = await db.query(query);
+
+    const topZones = result.rows.map(row => {
+      const revenue = Number(row.revenue);
+      const totalSlots = Number(row.total_slots);
+      const occupiedSlots = Number(row.occupied_slots);
+      const occupancy = totalSlots > 0 ? (occupiedSlots / totalSlots) * 100 : 0;
+
+      return {
+        id: row.id.toString(),
+        name: row.zone_name,
+        revenue: `₦ ${(revenue / 1000000).toFixed(1)}M`,
+        revenueRaw: revenue / 1000000,
+        occupancy: `${Math.floor(occupancy)}%`,
+        trend: Math.random() > 0.5 ? 'up' : 'down',
+        progress: Math.floor(occupancy),
+      };
     });
-
-    // Calculate revenue and occupancy for each zone
-    const zoneMetrics = await Promise.all(
-      zones.map(async (zone) => {
-        // Calculate revenue from tickets in this zone
-        const tickets = await prisma.parkingTicket.findMany({
-          where: {
-            bay: {
-              zoneId: zone.id,
-            },
-          },
-        });
-
-        const revenue = tickets.reduce(
-          (sum, t) => sum + Number(t.amountPaid),
-          0
-        );
-
-        // Calculate occupancy from parking slots
-        const slots = await prisma.parkingSlot.findMany({
-          where: {
-            bay: {
-              zoneId: zone.id,
-            },
-          },
-        });
-
-        const occupiedSlots = slots.filter(
-          (s) => s.status === 'OCCUPIED'
-        ).length;
-        const occupancy =
-          slots.length > 0 ? (occupiedSlots / slots.length) * 100 : 0;
-
-        return {
-          id: zone.id.toString(),
-          name: zone.zoneName,
-          revenue: `₦ ${(revenue / 1000000).toFixed(1)}M`,
-          revenueRaw: revenue / 1000000,
-          occupancy: `${Math.floor(occupancy)}%`,
-          trend: Math.random() > 0.5 ? ('up' as const) : ('down' as const),
-          progress: Math.floor(occupancy),
-        };
-      })
-    );
-
-    // Sort by revenue and take top 4
-    const topZones = zoneMetrics
-      .sort((a, b) => b.revenueRaw - a.revenueRaw)
-      .slice(0, 4);
 
     return NextResponse.json(topZones);
   } catch (error: any) {

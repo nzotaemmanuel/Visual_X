@@ -1,8 +1,25 @@
 "use server";
 
-import { prisma } from "@/lib/db";
-import { StaffRole, AccountStatus, UserRole } from "@prisma/client";
+import { db, dbQuerySingle, dbTransaction } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+
+export enum StaffRole {
+    ADMIN = 'ADMIN',
+    PARKING_AGENT = 'PARKING_AGENT',
+    ENFORCEMENT_AGENT = 'ENFORCEMENT_AGENT',
+}
+
+export enum UserRole {
+    ADMIN = 'ADMIN',
+    ENFORCEMENT_OFFICER = 'ENFORCEMENT_OFFICER',
+    ANALYST = 'ANALYST',
+    VIEWER = 'VIEWER',
+}
+
+export enum AccountStatus {
+    ACTIVE = 'ACTIVE',
+    SUSPENDED = 'SUSPENDED',
+}
 
 export async function createStaff(data: {
     firstName: string;
@@ -26,54 +43,69 @@ export async function createStaff(data: {
         }
 
         // Use transaction to create both User and Staff
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await dbTransaction(async (client) => {
             // Check if user already exists
-            const existingUser = await tx.user.findUnique({
-                where: { email: data.email }
-            });
+            const existingUserRes = await client.query(
+                'SELECT * FROM users WHERE email = $1',
+                [data.email]
+            );
+            const existingUser = existingUserRes.rows[0];
 
             if (existingUser) {
-                // If user exists, maybe update role? Or just skip user creation?
-                // For now, let's assume we proceed to create Staff only if User exists, 
-                // but usually this implies a conflict.
-                // However, user requested "Admin can create users". 
-                // If email exists, we effectively link existing user to new staff profile.
-                // But let's error to be safe as per standard registration flows.
                 throw new Error("User with this email already exists");
             }
 
             // Create User
-            await tx.user.create({
-                data: {
-                    email: data.email,
-                    passwordHash: hashedPassword,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    role: userRole,
-                    isActive: data.accountStatus === AccountStatus.ACTIVE,
-                }
-            });
+            await client.query(
+                `INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
+                [
+                    data.email,
+                    hashedPassword,
+                    data.firstName,
+                    data.lastName,
+                    userRole,
+                    data.accountStatus === AccountStatus.ACTIVE
+                ]
+            );
 
             // Create Staff
-            const staff = await tx.staff.create({
-                data: {
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    email: data.email,
-                    phoneNumber: data.phoneNumber,
-                    role: data.role,
-                    accountStatus: data.accountStatus,
-                    zoneId: data.zoneId,
-                }
-            });
+            const staffRes = await client.query(
+                `INSERT INTO staff (first_name, last_name, email, phone_number, role, account_status, zone_id, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+                 RETURNING *`,
+                [
+                    data.firstName,
+                    data.lastName,
+                    data.email,
+                    data.phoneNumber,
+                    data.role,
+                    data.accountStatus,
+                    data.zoneId
+                ]
+            );
 
-            return staff;
+            return staffRes.rows[0];
         });
 
-        return { success: true, data: result };
-    } catch (error: any) {
+        // Map result to camelCase if needed, but returning snake_case is likely fine for internal API usage or update frontend if it breaks.
+        // For consistency via actions, let's return it as property bag if we were returning specific type.
+        // But here we return `result` which is snake_case from DB.
+
+        return {
+            success: true, data: {
+                ...result,
+                firstName: result.first_name,
+                lastName: result.last_name,
+                phoneNumber: result.phone_number,
+                accountStatus: result.account_status,
+                zoneId: result.zone_id
+            }
+        };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to create staff";
         console.error("Create staff error:", error);
-        return { success: false, error: error.message || "Failed to create staff" };
+        return { success: false, error: message };
     }
 }
 
@@ -90,24 +122,50 @@ export async function updateStaff(
     }
 ) {
     try {
-        const updated = await prisma.staff.update({
-            where: { id },
-            data: data,
-        });
-        return { success: true, data: updated };
-    } catch (error) {
+        const setClauses: string[] = [];
+        const values: unknown[] = [];
+        let paramIndex = 1;
+
+        if (data.firstName !== undefined) { setClauses.push(`first_name = $${paramIndex++}`); values.push(data.firstName); }
+        if (data.lastName !== undefined) { setClauses.push(`last_name = $${paramIndex++}`); values.push(data.lastName); }
+        if (data.email !== undefined) { setClauses.push(`email = $${paramIndex++}`); values.push(data.email); }
+        if (data.phoneNumber !== undefined) { setClauses.push(`phone_number = $${paramIndex++}`); values.push(data.phoneNumber); }
+        if (data.role !== undefined) { setClauses.push(`role = $${paramIndex++}`); values.push(data.role); }
+        if (data.accountStatus !== undefined) { setClauses.push(`account_status = $${paramIndex++}`); values.push(data.accountStatus); }
+        if (data.zoneId !== undefined) { setClauses.push(`zone_id = $${paramIndex++}`); values.push(data.zoneId); }
+
+        if (setClauses.length === 0) return { success: true };
+
+        setClauses.push(`updated_at = NOW()`);
+
+        values.push(id);
+        const query = `UPDATE staff SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+
+        const result = await db.query(query, values);
+        const updated = result.rows[0];
+
+        return {
+            success: true, data: {
+                ...updated,
+                firstName: updated.first_name,
+                lastName: updated.last_name,
+                phoneNumber: updated.phone_number,
+                accountStatus: updated.account_status,
+                zoneId: updated.zone_id
+            }
+        };
+    } catch (error: unknown) {
+        console.error("Update staff error:", error);
         return { success: false, error: "Failed to update staff" };
     }
 }
 
 export async function deleteStaff(id: number) {
     try {
-        await prisma.$transaction(async (tx) => {
+        await dbTransaction(async (client) => {
             // First find the staff member to get their email
-            const staff = await tx.staff.findUnique({
-                where: { id },
-                select: { email: true }
-            });
+            const staffRes = await client.query('SELECT email FROM staff WHERE id = $1', [id]);
+            const staff = staffRes.rows[0];
 
             if (!staff) {
                 throw new Error("Staff member not found");
@@ -115,73 +173,57 @@ export async function deleteStaff(id: number) {
 
             // --- CASCADING CLEANUP ---
             // 1. Handle Appeals: Nullify reviewer links
-            await tx.appeal.updateMany({
-                where: { reviewerId: id },
-                data: { reviewerId: null }
-            });
+            await client.query('UPDATE appeals SET reviewer_id = NULL WHERE reviewer_id = $1', [id]);
 
             // 2. Handle ParkingTickets: Nullify agent links
-            await tx.parkingTicket.updateMany({
-                where: { agentId: id },
-                data: { agentId: null }
-            });
+            await client.query('UPDATE parking_tickets SET agent_id = NULL WHERE agent_id = $1', [id]);
 
             // 3. Delete EnforcementActions requested by this staff
-            await tx.enforcementAction.deleteMany({
-                where: { requestedBy: id }
-            });
+            await client.query('DELETE FROM enforcement_actions WHERE requested_by = $1', [id]);
 
             // 4. Handle CustomerViolations recorded by this staff
-            const violations = await tx.customerViolation.findMany({
-                where: { enforcementOfficerId: id },
-                select: { id: true }
-            });
-
-            const violationIds = violations.map(v => v.id);
+            const violationsRes = await client.query('SELECT id FROM customer_violations WHERE enforcement_officer_id = $1', [id]);
+            const violationIds = violationsRes.rows.map(v => v.id);
 
             if (violationIds.length > 0) {
+                const idsString = violationIds.join(','); // Not safe for SQL injection if not careful, but IDs are ints. Better to use ANY($1)
+
+                // PostgreSQL supports = ANY($1) for arrays
                 // Delete children of these violations first
-                await tx.appeal.deleteMany({
-                    where: { violationId: { in: violationIds } }
-                });
-
-                await tx.fine.deleteMany({
-                    where: { violationId: { in: violationIds } }
-                });
-
-                await tx.enforcementAction.deleteMany({
-                    where: { violationId: { in: violationIds } }
-                });
+                await client.query('DELETE FROM appeals WHERE violation_id = ANY($1)', [violationIds]);
+                await client.query('DELETE FROM fines WHERE violation_id = ANY($1)', [violationIds]);
+                await client.query('DELETE FROM enforcement_actions WHERE violation_id = ANY($1)', [violationIds]);
 
                 // Finally delete the violations themselves
-                await tx.customerViolation.deleteMany({
-                    where: { id: { in: violationIds } }
-                });
+                await client.query('DELETE FROM customer_violations WHERE id = ANY($1)', [violationIds]);
             }
 
             // 5. Delete the associated User record
-            await tx.user.deleteMany({
-                where: { email: staff.email }
-            });
+            await client.query('DELETE FROM users WHERE email = $1', [staff.email]);
 
             // 6. Delete the Staff record
-            await tx.staff.delete({
-                where: { id },
-            });
+            await client.query('DELETE FROM staff WHERE id = $1', [id]);
         });
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to delete staff";
         console.error("Delete staff error:", error);
-        return { success: false, error: error.message || "Failed to delete staff" };
+        return { success: false, error: message };
     }
 }
 
 export async function getStaffList() {
     try {
-        const staff = await prisma.staff.findMany({
-            orderBy: { firstName: "asc" },
-        });
+        const result = await db.query('SELECT * FROM staff ORDER BY first_name ASC');
+        const staff = result.rows.map(s => ({
+            ...s,
+            firstName: s.first_name,
+            lastName: s.last_name,
+            phoneNumber: s.phone_number,
+            accountStatus: s.account_status,
+            zoneId: s.zone_id
+        }));
         return { success: true, data: staff };
     } catch (error) {
         return { success: false, error: "Failed to fetch staff" };

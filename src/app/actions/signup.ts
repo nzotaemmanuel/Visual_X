@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/db';
+import { db, dbQuerySingle } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
 export interface SignupRequest {
@@ -58,9 +58,10 @@ export async function signup(request: SignupRequest): Promise<SignupResponse> {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: request.email },
-    });
+    const existingUser = await dbQuerySingle(
+      'SELECT * FROM users WHERE email = $1',
+      [request.email]
+    );
 
     if (existingUser) {
       return {
@@ -73,15 +74,13 @@ export async function signup(request: SignupRequest): Promise<SignupResponse> {
     const passwordHash = await hashPassword(request.password);
 
     // Create user (default role is VIEWER)
-    const user = await prisma.user.create({
-      data: {
-        email: request.email,
-        passwordHash,
-        firstName: request.firstName,
-        lastName: request.lastName,
-        role: 'VIEWER', // Default role
-      },
-    });
+    const result = await db.query(
+      `INSERT INTO users (email, password_hash, first_name, last_name, role)
+         VALUES ($1, $2, $3, $4, 'VIEWER')
+         RETURNING *`,
+      [request.email, passwordHash, request.firstName, request.lastName]
+    );
+    const user = result.rows[0];
 
     return {
       success: true,
@@ -89,8 +88,8 @@ export async function signup(request: SignupRequest): Promise<SignupResponse> {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
         role: user.role,
       },
     };

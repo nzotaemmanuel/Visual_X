@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/db';
+import { dbQuerySingle } from '@/lib/db';
 import {
   comparePassword,
   generateAccessToken,
@@ -43,9 +43,10 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
     }
 
     // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: request.email },
-    });
+    const user = await dbQuerySingle(
+      'SELECT * FROM users WHERE email = $1',
+      [request.email]
+    );
 
     if (!user) {
       return {
@@ -55,7 +56,7 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
     }
 
     // Check if user is active
-    if (!user.isActive) {
+    if (!user.is_active) {
       return {
         success: false,
         message: 'Account is deactivated. Please contact an administrator.',
@@ -65,7 +66,7 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
     // Verify password
     const passwordValid = await comparePassword(
       request.password,
-      user.passwordHash
+      user.password_hash
     );
 
     if (!passwordValid) {
@@ -113,8 +114,8 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
+        firstName: user.first_name || undefined,
+        lastName: user.last_name || undefined,
         role: user.role,
       },
       accessToken,

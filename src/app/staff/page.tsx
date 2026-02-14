@@ -1,6 +1,7 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DirectoryContainer } from "@/components/dashboard/DirectoryContainer";
-import { getZones, getStaffList } from "@/lib/db";
+import { getZones } from "@/app/actions/zones";
+import { getStaffList } from "@/app/actions/staff";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default function StaffPage() {
 
 async function StaffContent() {
     const zones = await getZones();
-    const staffList = await getStaffList();
+    const staffResponse = await getStaffList();
+    const staffList = staffResponse.success ? staffResponse.data : [];
     return <DirectoryContainer zones={zones} initialMode="staff" staffData={staffList} />;
 }

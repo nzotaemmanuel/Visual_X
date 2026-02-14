@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { NextRequest } from 'next/server';
 
 function csvEscape(v: any) {
@@ -11,16 +11,28 @@ export async function GET(request: NextRequest) {
     const startDate = request.nextUrl.searchParams.get('startDate');
     const endDate = request.nextUrl.searchParams.get('endDate');
 
-    const where: any = {};
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // Filter by Zone (via parking_bays -> parking_zones)
     if (zoneId && zoneId !== 'all') {
-      where.bay = { zoneId: parseInt(zoneId) };
-    }
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate);
-      if (endDate) where.createdAt.lte = new Date(endDate);
+      // Need to join parking_bays or check bay_id in subquery/join
+      // But parking_tickets has bay_id.
+      conditions.push(`pt.bay_id IN (SELECT id FROM parking_bays WHERE zone_id = $${paramIndex++})`);
+      params.push(parseInt(zoneId));
     }
 
+    if (startDate) {
+      conditions.push(`pt.created_at >= $${paramIndex++}`);
+      params.push(new Date(startDate));
+    }
+    if (endDate) {
+      conditions.push(`pt.created_at <= $${paramIndex++}`);
+      params.push(new Date(endDate));
+    }
+
+    const baseWhere = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
     const pageSize = 1000;
 
     const stream = new ReadableStream({
@@ -28,30 +40,45 @@ export async function GET(request: NextRequest) {
         const header = ['transactionRef', 'zoneId', 'bayId', 'amountPaid', 'channel', 'status', 'createdAt', 'customerId', 'customerName'];
         controller.enqueue(header.join(',') + '\n');
 
-        const includeClause = { bay: true, customer: true } as const;
-
-        let lastId: any = undefined;
+        let lastId = 0;
         while (true) {
-          const batch = await prisma.parkingTicket.findMany({
-            where,
-            include: includeClause,
-            orderBy: { id: 'asc' },
-            take: pageSize,
-            ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
-          });
+          const currentParams = [...params];
+          const whereClause = baseWhere
+            ? `${baseWhere} AND pt.id > $${paramIndex}`
+            : `WHERE pt.id > $${paramIndex}`;
+
+          currentParams.push(lastId);
+
+          const query = `
+            SELECT 
+                pt.*,
+                pb.zone_id,
+                c.first_name,
+                c.last_name
+            FROM parking_tickets pt
+            LEFT JOIN parking_bays pb ON pt.bay_id = pb.id
+            LEFT JOIN customers c ON pt.customer_id = c.id
+            ${whereClause}
+            ORDER BY pt.id ASC
+            LIMIT ${pageSize}
+          `;
+
+          const result = await db.query(query, currentParams);
+          const batch = result.rows;
+
           if (batch.length === 0) break;
 
           for (const t of batch) {
             const row = [
-              csvEscape(t.transactionRef || t.id),
-              csvEscape(t.bay?.zoneId ?? ''),
-              csvEscape(t.bayId ?? ''),
-              csvEscape(t.amountPaid ?? 0),
+              csvEscape(t.transaction_ref || t.id),
+              csvEscape(t.zone_id ?? ''),
+              csvEscape(t.bay_id ?? ''),
+              csvEscape(t.amount_paid ?? 0),
               csvEscape(t.channel ?? ''),
               csvEscape(t.status ?? ''),
-              csvEscape(t.createdAt?.toISOString() ?? ''),
-              csvEscape(t.customerId ?? ''),
-              csvEscape(t.customer ? `${t.customer.firstName || ''} ${t.customer.lastName || ''}`.trim() : ''),
+              csvEscape(t.created_at?.toISOString() ?? ''),
+              csvEscape(t.customer_id ?? ''),
+              csvEscape((t.first_name || t.last_name) ? `${t.first_name || ''} ${t.last_name || ''}`.trim() : ''),
             ];
             controller.enqueue(row.join(',') + '\n');
             lastId = t.id;

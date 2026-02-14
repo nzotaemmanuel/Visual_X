@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 function toCsv(rows: string[][]) {
@@ -7,28 +7,74 @@ function toCsv(rows: string[][]) {
 
 export async function GET(request: NextRequest) {
   try {
-    const zones = await prisma.parkingZone.findMany({ orderBy: { zoneName: 'asc' } });
+    const query = `
+      SELECT 
+        pz.id,
+        pz.zone_name,
+        COALESCE(SUM(pt.amount_paid), 0) as revenue,
+        COUNT(CASE WHEN ps.status = 'OCCUPIED' THEN 1 END) as occupied_slots,
+        COUNT(ps.id) as total_slots
+      FROM parking_zones pz
+      LEFT JOIN parking_bays pb ON pb.zone_id = pz.id
+      LEFT JOIN parking_tickets pt ON pt.bay_id = pb.id
+      LEFT JOIN parking_slots ps ON ps.bay_id = pb.id
+      GROUP BY pz.id, pz.zone_name
+      ORDER BY pz.zone_name ASC
+    `;
+    // Note: The above query joins tickets and slots which causes Cartesian product if a bay has both.
+    // Tickets are many per bay, slots are many per bay. This is bad.
+    // We should use subqueries or separate aggregations.
 
-    const zoneMetrics = await Promise.all(
-      zones.map(async (zone) => {
-        const tickets = await prisma.parkingTicket.findMany({ where: { bay: { zoneId: zone.id } } });
-        const revenue = tickets.reduce((sum, t) => sum + Number(t.amountPaid), 0);
+    // Better query:
+    const optimizedQuery = `
+      WITH ZoneRevenue AS (
+        SELECT 
+          pb.zone_id, 
+          SUM(pt.amount_paid) as revenue 
+        FROM parking_tickets pt
+        JOIN parking_bays pb ON pt.bay_id = pb.id
+        GROUP BY pb.zone_id
+      ),
+      ZoneOccupancy AS (
+        SELECT 
+          pb.zone_id,
+          COUNT(*) as total_slots,
+          COUNT(CASE WHEN ps.status = 'OCCUPIED' THEN 1 END) as occupied_slots
+        FROM parking_slots ps
+        JOIN parking_bays pb ON ps.bay_id = pb.id
+        GROUP BY pb.zone_id
+      )
+      SELECT 
+        pz.id,
+        pz.zone_name,
+        COALESCE(zr.revenue, 0) as revenue,
+        COALESCE(zo.total_slots, 0) as total_slots,
+        COALESCE(zo.occupied_slots, 0) as occupied_slots
+      FROM parking_zones pz
+      LEFT JOIN ZoneRevenue zr ON pz.id = zr.zone_id
+      LEFT JOIN ZoneOccupancy zo ON pz.id = zo.zone_id
+      ORDER BY pz.zone_name ASC
+    `;
 
-        const slots = await prisma.parkingSlot.findMany({ where: { bay: { zoneId: zone.id } } });
-        const occupiedSlots = slots.filter((s) => s.status === 'OCCUPIED').length;
-        const occupancy = slots.length > 0 ? (occupiedSlots / slots.length) * 100 : 0;
+    const result = await db.query(optimizedQuery);
+    const zones = result.rows;
 
-        return {
-          id: zone.id,
-          name: zone.zoneName,
-          revenueRaw: revenue,
-          revenue: revenue,
-          occupancy: Math.floor(occupancy),
-          totalSlots: slots.length,
-          occupiedSlots,
-        };
-      })
-    );
+    const zoneMetrics = zones.map((z) => {
+      const revenue = Number(z.revenue);
+      const totalSlots = Number(z.total_slots);
+      const occupiedSlots = Number(z.occupied_slots);
+      const occupancy = totalSlots > 0 ? (occupiedSlots / totalSlots) * 100 : 0;
+
+      return {
+        id: z.id,
+        name: z.zone_name,
+        revenueRaw: revenue,
+        revenue: revenue,
+        occupancy: Math.floor(occupancy),
+        totalSlots,
+        occupiedSlots,
+      };
+    });
 
     // Build CSV
     const header = ['zoneId', 'zoneName', 'revenue', 'revenueRaw', 'occupancyPercent', 'totalSlots', 'occupiedSlots'];

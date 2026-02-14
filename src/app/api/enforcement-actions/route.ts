@@ -1,44 +1,47 @@
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
     const zoneId = request.nextUrl.searchParams.get('zoneId');
 
-    // Define include structure as const for proper type inference
-    const includeClause = {
-      violation: {
-        include: {
-          vehicle: true,
-          zone: true,
-        },
-      },
-      requester: true,
-    } as const;
+    // Build query with JOINs
+    let query = `
+      SELECT 
+        ea.reference_id,
+        ea.action_type,
+        ea.requested_at,
+        ea.status,
+        v.plate_number,
+        pz.zone_name,
+        s.first_name as officer_first_name,
+        s.last_name as officer_last_name
+      FROM enforcement_actions ea
+      LEFT JOIN customer_violations cv ON ea.violation_id = cv.id
+      LEFT JOIN vehicles v ON cv.vehicle_id = v.id
+      LEFT JOIN parking_zones pz ON cv.zone_id = pz.id
+      LEFT JOIN staff s ON ea.requested_by = s.id
+    `;
 
-    const whereClause = zoneId && zoneId !== 'all'
-      ? {
-        violation: {
-          zoneId: parseInt(zoneId),
-        },
-      }
-      : undefined;
+    const params: any[] = [];
+    if (zoneId && zoneId !== 'all') {
+      // Assuming customer_violations has zone_id, which it does based on schema
+      query += ` WHERE cv.zone_id = $1`;
+      params.push(parseInt(zoneId));
+    }
 
-    const actions = await prisma.enforcementAction.findMany({
-      where: whereClause,
-      include: includeClause,
-      orderBy: { requestedAt: 'desc' },
-      take: 10,
-    });
+    query += ` ORDER BY ea.requested_at DESC LIMIT 10`;
 
-    const enforcementData = actions.map((action) => ({
-      id: action.referenceId,
-      vehicle: action.violation.vehicle.plateNumber,
-      action: action.actionType,
-      zone: action.violation.zone.zoneName,
-      officer: action.requester.firstName + ' ' + action.requester.lastName,
-      time: new Date(action.requestedAt).toLocaleTimeString(),
-      status: action.status,
+    const result = await db.query(query, params);
+
+    const enforcementData = result.rows.map((row) => ({
+      id: row.reference_id,
+      vehicle: row.plate_number || 'Unknown',
+      action: row.action_type,
+      zone: row.zone_name || 'Unknown',
+      officer: `${row.officer_first_name || ''} ${row.officer_last_name || ''}`.trim() || 'System',
+      time: new Date(row.requested_at).toLocaleTimeString(),
+      status: row.status,
     }));
 
     return NextResponse.json(enforcementData);

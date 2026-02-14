@@ -1,11 +1,16 @@
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { prisma } from '../src/lib/db';
+import { Pool } from 'pg';
+import 'dotenv/config';
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function run() {
   const email = process.argv[2] || 'admin@laspa.gov.ng';
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const userRes = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  const user = userRes.rows[0];
+
   if (!user) {
     console.error('User not found:', email);
     process.exit(1);
@@ -15,8 +20,14 @@ async function run() {
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
-  await prisma.passwordReset.deleteMany({ where: { userId: user.id } });
-  const pr = await prisma.passwordReset.create({ data: { userId: user.id, token: hashedToken, expiresAt } });
+  // Delete existing tokens
+  await pool.query('DELETE FROM password_resets WHERE user_id = $1', [user.id]);
+
+  // Create new token
+  await pool.query(
+    'INSERT INTO password_resets (user_id, token, expires_at, created_at) VALUES ($1, $2, $3, NOW())',
+    [user.id, hashedToken, expiresAt]
+  );
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const resetLink = `${appUrl}/reset-password/${resetToken}`;
@@ -41,8 +52,11 @@ async function run() {
   } catch (e) {
     console.error('Failed to send email:', e);
   }
-
-  await prisma.$disconnect();
 }
 
-run().catch((e) => { console.error(e); process.exit(1); });
+run().catch((e) => {
+  console.error(e);
+  process.exit(1);
+}).finally(() => {
+  pool.end();
+});

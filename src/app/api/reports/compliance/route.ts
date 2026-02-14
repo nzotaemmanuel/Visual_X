@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { NextRequest } from 'next/server';
 
 function csvEscape(v: any) {
@@ -11,19 +11,27 @@ export async function GET(request: NextRequest) {
         const startDate = request.nextUrl.searchParams.get('startDate');
         const endDate = request.nextUrl.searchParams.get('endDate');
 
-        const where: any = {};
+        const conditions: string[] = [];
+        const params: any[] = [];
+        let paramIndex = 1;
 
         // Filter by Zone
         if (zoneId && zoneId !== 'all') {
-            where.zone = { id: parseInt(zoneId) };
+            conditions.push(`cv.zone_id = $${paramIndex++}`);
+            params.push(parseInt(zoneId));
         }
 
         // Filter by Date
-        if (startDate || endDate) {
-            where.violationDate = {};
-            if (startDate) where.violationDate.gte = new Date(startDate);
-            if (endDate) where.violationDate.lte = new Date(endDate);
+        if (startDate) {
+            conditions.push(`cv.violation_date >= $${paramIndex++}`);
+            params.push(new Date(startDate));
         }
+        if (endDate) {
+            conditions.push(`cv.violation_date <= $${paramIndex++}`);
+            params.push(new Date(endDate));
+        }
+
+        const baseWhere = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 
         const pageSize = 1000;
 
@@ -44,40 +52,56 @@ export async function GET(request: NextRequest) {
                 ];
                 controller.enqueue(header.join(',') + '\n');
 
-                const includeClause = {
-                    vehicle: true,
-                    zone: true,
-                    violationType: true,
-                    enforcementOfficer: true,
-                    actions: true
-                } as const;
-
-                let lastId: any = undefined;
+                let lastId = 0;
                 while (true) {
-                    const batch = await prisma.customerViolation.findMany({
-                        where,
-                        include: includeClause,
-                        orderBy: { id: 'asc' },
-                        take: pageSize,
-                        ...(lastId ? { cursor: { id: lastId }, skip: 1 } : {}),
-                    });
+                    const currentParams = [...params];
+                    // Add cursor condition
+                    const whereClause = baseWhere
+                        ? `${baseWhere} AND cv.id > $${paramIndex}`
+                        : `WHERE cv.id > $${paramIndex}`;
+
+                    currentParams.push(lastId);
+
+                    const query = `
+                        SELECT 
+                            cv.*,
+                            v.plate_number,
+                            pz.zone_name,
+                            vt.description as violation_description,
+                            s.first_name as officer_first_name,
+                            s.last_name as officer_last_name,
+                            (
+                                SELECT string_agg(concat(ea.action_type, ' (', ea.status, ')'), '; ')
+                                FROM enforcement_actions ea
+                                WHERE ea.violation_id = cv.id
+                            ) as actions_list
+                        FROM customer_violations cv
+                        LEFT JOIN vehicles v ON cv.vehicle_id = v.id
+                        LEFT JOIN parking_zones pz ON cv.zone_id = pz.id
+                        LEFT JOIN violation_types vt ON cv.violation_type_id = vt.id
+                        LEFT JOIN staff s ON cv.enforcement_officer_id = s.id
+                        ${whereClause}
+                        ORDER BY cv.id ASC
+                        LIMIT ${pageSize}
+                    `;
+
+                    const result = await db.query(query, currentParams);
+                    const batch = result.rows;
+
                     if (batch.length === 0) break;
 
-                    for (const v of batch as any[]) {
-                        // Format actions into a single string
-                        const actionsList = v.actions?.map((a: any) => `${a.actionType} (${a.status})`).join('; ') || '';
-
+                    for (const v of batch) {
                         const row = [
                             csvEscape(v.id),
-                            csvEscape(v.referenceId),
-                            csvEscape(v.vehicle?.plateNumber ?? 'Unknown'),
-                            csvEscape(v.zone?.zoneName ?? ''),
-                            csvEscape(v.violationType?.description ?? 'Unknown'),
+                            csvEscape(v.reference_id),
+                            csvEscape(v.plate_number ?? 'Unknown'),
+                            csvEscape(v.zone_name ?? ''),
+                            csvEscape(v.violation_description ?? 'Unknown'),
                             csvEscape(v.status),
-                            csvEscape(v.feeAmount ?? 0),
-                            csvEscape(v.enforcementOfficer ? `${v.enforcementOfficer.firstName} ${v.enforcementOfficer.lastName}` : 'System'),
-                            csvEscape(v.violationDate?.toISOString() ?? ''),
-                            csvEscape(actionsList)
+                            csvEscape(v.fee_amount ?? 0),
+                            csvEscape(v.officer_first_name ? `${v.officer_first_name} ${v.officer_last_name}` : 'System'),
+                            csvEscape(v.violation_date?.toISOString() ?? ''),
+                            csvEscape(v.actions_list || '')
                         ];
                         controller.enqueue(row.join(',') + '\n');
                         lastId = v.id;

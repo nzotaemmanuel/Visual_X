@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { OperationsContainer } from "@/components/dashboard/OperationsContainer";
-import { getZones } from "@/lib/db";
+import { getZones } from "@/app/actions/zones";
 
 export const dynamic = "force-dynamic";
 

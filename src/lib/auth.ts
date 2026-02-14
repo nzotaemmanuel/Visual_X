@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from './db';
+import { db, dbQuerySingle } from './db';
+import { randomUUID } from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-refresh-secret-key';
@@ -72,16 +73,15 @@ export async function createSession(
   token: string
 ): Promise<string> {
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  const id = randomUUID();
 
-  const session = await prisma.session.create({
-    data: {
-      userId,
-      token,
-      expiresAt,
-    },
-  });
+  await db.query(
+    `INSERT INTO sessions (id, user_id, token, expires_at, created_at)
+     VALUES ($1, $2, $3, $4, NOW())`,
+    [id, userId, token, expiresAt]
+  );
 
-  return session.id;
+  return id;
 }
 
 export async function createRefreshTokenRecord(
@@ -89,45 +89,45 @@ export async function createRefreshTokenRecord(
   token: string
 ): Promise<string> {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const id = randomUUID();
 
-  const refreshToken = await prisma.refreshToken.create({
-    data: {
-      userId,
-      token,
-      expiresAt,
-    },
-  });
+  await db.query(
+    `INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at)
+     VALUES ($1, $2, $3, $4, NOW())`,
+    [id, userId, token, expiresAt]
+  );
 
-  return refreshToken.id;
+  return id;
 }
 
 export async function getSession(
   sessionId: string
 ): Promise<{ userId: number; token: string; expiresAt: Date } | null> {
-  const session = await prisma.session.findUnique({
-    where: { id: sessionId },
-  });
+  const session = await dbQuerySingle(
+    'SELECT * FROM sessions WHERE id = $1',
+    [sessionId]
+  );
 
-  if (!session || new Date() > session.expiresAt) {
+  if (!session || new Date() > session.expires_at) {
     return null;
   }
 
-  return session;
+  return {
+    userId: session.user_id,
+    token: session.token,
+    expiresAt: session.expires_at,
+  };
 }
 
 export async function invalidateSession(sessionId: string): Promise<void> {
-  await prisma.session.delete({
-    where: { id: sessionId },
-  }).catch(() => {
-    // Session might already be deleted
-  });
+  await db.query('DELETE FROM sessions WHERE id = $1', [sessionId]);
 }
 
 export async function invalidateRefreshToken(tokenId: string): Promise<void> {
-  await prisma.refreshToken.update({
-    where: { id: tokenId },
-    data: { revokedAt: new Date() },
-  });
+  await db.query(
+    'UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1',
+    [tokenId]
+  );
 }
 
 // Password reset
@@ -135,21 +135,20 @@ export async function createPasswordReset(
   userId: number
 ): Promise<{ token: string; expiresAt: Date }> {
   // Invalidate previous reset tokens
-  await prisma.passwordReset.updateMany({
-    where: { userId, usedAt: null },
-    data: { usedAt: new Date() },
-  });
+  await db.query(
+    'UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
+    [userId]
+  );
 
   const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '1h' });
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const id = randomUUID();
 
-  await prisma.passwordReset.create({
-    data: {
-      userId,
-      token,
-      expiresAt,
-    },
-  });
+  await db.query(
+    `INSERT INTO password_resets (id, user_id, token, expires_at, created_at)
+     VALUES ($1, $2, $3, $4, NOW())`,
+    [id, userId, token, expiresAt]
+  );
 
   return { token, expiresAt };
 }
@@ -159,15 +158,16 @@ export async function verifyPasswordReset(
 ): Promise<number | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-    
-    const reset = await prisma.passwordReset.findUnique({
-      where: { token },
-    });
+
+    const reset = await dbQuerySingle(
+      'SELECT * FROM password_resets WHERE token = $1',
+      [token]
+    );
 
     if (
       !reset ||
-      reset.usedAt ||
-      new Date() > reset.expiresAt
+      reset.used_at ||
+      new Date() > reset.expires_at
     ) {
       return null;
     }
@@ -179,16 +179,16 @@ export async function verifyPasswordReset(
 }
 
 export async function completePasswordReset(token: string): Promise<void> {
-  await prisma.passwordReset.update({
-    where: { token },
-    data: { usedAt: new Date() },
-  });
+  await db.query(
+    'UPDATE password_resets SET used_at = NOW() WHERE token = $1',
+    [token]
+  );
 }
 
 // User update
 export async function updateUserLastActive(userId: number): Promise<void> {
-  await prisma.user.update({
-    where: { id: userId },
-    data: { lastActiveAt: new Date() },
-  });
+  await db.query(
+    'UPDATE users SET last_active_at = NOW() WHERE id = $1',
+    [userId]
+  );
 }

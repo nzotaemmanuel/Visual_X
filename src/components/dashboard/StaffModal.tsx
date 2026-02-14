@@ -26,7 +26,6 @@ interface Staff {
     password?: string;
     // Mock data properties
     name?: string;
-    zone?: string;
     rating?: number;
     zoneId?: number;
     zone?: { id: number; zoneName: string };
