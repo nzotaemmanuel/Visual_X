@@ -9,144 +9,84 @@ This document defines the comprehensive database schema for the LASPA Parking Ma
 ## 2. Entity Relationship Model
 
 ### A. Identity & Access Management
-**1. USERS**
-*Extends `Entities.md: Customers` and `laspa_technical_doc: 2.1`*
-- `id` (UUID, PK)
-- `customer_reference_id` (VARCHAR, Unique, from External/ICELL)
-- `first_name` (VARCHAR)
-- `last_name` (VARCHAR)
-- `email` (VARCHAR, Unique)
-- `phone_number` (VARCHAR)
-- `user_type` (ENUM: 'CUSTOMER', 'ADMIN', 'PARKING_AGENT', 'ENFORCEMENT_AGENT')
-- `account_status` (ENUM: 'ACTIVE', 'SUSPENDED')
-- `created_at` (TIMESTAMP)
-- `updated_at` (TIMESTAMP)
+**1. USERS** (Dashboard)
+- `id` (INT, PK)
+- `email` (TEXT, Unique)
+- `password_hash` (TEXT)
+- `first_name` (TEXT)
+- `last_name` (TEXT)
+- `role` (ENUM: UserRole)
+- `is_active` (BOOLEAN)
 
-**2. VEHICLES**
-*Extends `Entities.md: Vehicles` and `laspa_technical_doc: 2.1`*
-- `id` (UUID, PK)
-- `user_id` (UUID, FK -> USERS.id)
-- `plate_number` (VARCHAR, Unique)
-- `plate_code` (VARCHAR) - e.g., "KJA"
-- `plate_source` (VARCHAR) - e.g., "Lagos"
-- `plate_type` (VARCHAR) - e.g., "Private", "Commercial"
+**2. STAFF** (Field Operations)
+- `id` (INT, PK)
+- `email` (TEXT, Unique)
+- `first_name` (TEXT)
+- `last_name` (TEXT)
+- `phone_number` (TEXT)
+- `role` (ENUM: StaffRole)
+- `account_status` (ENUM: AccountStatus)
+
+**3. CUSTOMERS** (Mobile App)
+- `id` (INT, PK)
+- `customer_reference_id` (TEXT, Unique)
+- `first_name` (TEXT)
+- `last_name` (TEXT)
+- `email` (TEXT, Unique)
+- `phone_number` (TEXT)
+
+**4. VEHICLES**
+- `id` (INT, PK)
+- `customer_id` (INT, FK -> CUSTOMERS.id)
+- `plate_number` (TEXT, Unique)
+- `plate_code` (TEXT)
 - `is_default` (BOOLEAN)
 
 ### B. Parking Infrastructure
-**3. PARKING_ZONES**
-*Extends `Entities.md: Parking Zones` and `laspa_technical_doc: 3.1`*
-- `id` (UUID, PK)
-- `zone_code` (VARCHAR, Unique) - e.g., "IKJ111"
-- `zone_name` (VARCHAR) - e.g., "Ikeja"
-- `geographical_area` (GEOMETRY/POLYGON) - Optional for map
+**5. PARKING_ZONES**
+- `id` (INT, PK)
+- `zone_code` (TEXT, Unique)
+- `zone_name` (TEXT)
+- `geographical_area` (GEOMETRY: Polygon)
 
-**4. PARKING_BAYS**
-*Extends `Entities.md: Parking Bays` and `laspa_technical_doc: 3.2`*
-- `id` (UUID, PK)
-- `zone_id` (UUID, FK -> PARKING_ZONES.id)
-- `bay_code` (VARCHAR, Unique) - e.g., "MDPB128"
-- `bay_name` (VARCHAR)
-- `address` (TEXT)
-- `capacity_lanes` (INTEGER)
+**6. PARKING_BAYS**
+- `id` (INT, PK)
+- `zone_id` (INT, FK -> PARKING_ZONES.id)
+- `bay_code` (TEXT, Unique)
+- `bay_name` (TEXT)
 - `base_fee` (DECIMAL)
-- `operating_hours` (JSONB) - Opening/Closing times
 
-**5. PARKING_SLOTS**
-*Extends `Entities.md: Parking Slot`*
-- `id` (UUID, PK)
-- `bay_id` (UUID, FK -> PARKING_BAYS.id)
-- `slot_number` (VARCHAR) - e.g., "Lane 1"
-- `status` (ENUM: 'AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_SERVICE')
-- `sensor_id` (VARCHAR, Optional) - For IoT integration
+**7. PARKING_SLOTS**
+- `id` (INT, PK)
+- `bay_id` (INT, FK -> PARKING_BAYS.id)
+- `slot_number` (TEXT)
+- `status` (ENUM: SlotStatus)
 
-### C. Parking Transactions & Tickets
-**6. PARKING_TICKETS** (Transactions)
-*Extends `Entities.md: Ticket Purchase` and `laspa_technical_doc: 2.2, 3.3`*
-- `id` (UUID, PK)
-- `transaction_ref` (VARCHAR, Unique) - e.g., "P-20251009..."
-- `customer_id` (UUID, FK -> USERS.id)
-- `vehicle_id` (UUID, FK -> VEHICLES.id)
-- `bay_id` (UUID, FK -> PARKING_BAYS.id)
-- `slot_id` (UUID, FK -> PARKING_SLOTS.id, Nullable)
-- `agent_id` (UUID, FK -> USERS.id, Nullable) - If booked by agent
-- `channel` (ENUM: 'WEB', 'MOBILE_APP', 'SMS', 'POS')
-- `amount_paid` (DECIMAL)
-- `duration_hours` (INTEGER)
+### C. Transactions & Enforcement
+**8. PARKING_TICKETS**
+- `id` (INT, PK)
+- `transaction_ref` (TEXT, Unique)
+- `customer_id` (INT, FK -> CUSTOMERS.id)
+- `vehicle_id` (INT, FK -> VEHICLES.id)
+- `bay_id` (INT, FK -> PARKING_BAYS.id)
 - `start_time` (TIMESTAMP)
 - `expiry_time` (TIMESTAMP)
-- `checkout_time` (TIMESTAMP, Nullable)
-- `status` (ENUM: 'ACTIVE', 'COMPLETED', 'EXPIRED', 'CANCELLED')
-- `payment_method` (ENUM: 'WALLET', 'CARD', 'CASH', 'AIRTIME')
-- `created_at` (TIMESTAMP)
-
-**7. RECEIPTS**
-*Extends `Entities.md: Parking Receipts`*
-- `id` (UUID, PK)
-- `ticket_id` (UUID, FK -> PARKING_TICKETS.id)
-- `receipt_number` (VARCHAR, Unique)
-- `generated_at` (TIMESTAMP)
-- `pdf_url` (VARCHAR)
-
-### D. Enforcement & Violations
-**8. VIOLATION_TYPES** (Catalog)
-*Extends `laspa_technical_doc: 2.5`*
-- `id` (UUID, PK)
-- `code` (VARCHAR, Unique) - e.g., "PV01"
-- `description` (TEXT) - e.g., "PARKING ACROSS YELLOW LINE..."
-- `default_fee` (DECIMAL)
-- `severity_level` (INTEGER)
+- `status` (ENUM: TicketStatus)
 
 **9. CUSTOMER_VIOLATIONS**
-*Extends `Entities.md: Violation` and `laspa_technical_doc: 2.4`*
-- `id` (UUID, PK)
-- `reference_id` (VARCHAR, Unique)
-- `ticket_id` (UUID, FK -> PARKING_TICKETS.id, Nullable) - If related to overstay
-- `user_id` (UUID, FK -> USERS.id)
-- `vehicle_id` (UUID, FK -> VEHICLES.id)
-- `violation_type_id` (UUID, FK -> VIOLATION_TYPES.id)
-- `zone_id` (UUID, FK -> PARKING_ZONES.id)
-- `location_description` (TEXT)
-- `violation_date` (TIMESTAMP)
-- `fee_amount` (DECIMAL) - Can override default
-- `status` (ENUM: 'OUTSTANDING', 'PAID', 'APPEALED', 'WAIVED')
-- `enforcement_officer_id` (UUID, FK -> USERS.id)
-- `evidence_images` (JSONB) - Array of image URLs
+- `id` (INT, PK)
+- `reference_id` (TEXT, Unique)
+- `customer_id` (INT, FK -> CUSTOMERS.id)
+- `vehicle_id` (INT, FK -> VEHICLES.id)
+- `enforcement_officer_id` (INT, FK -> STAFF.id)
+- `status` (ENUM: ViolationStatus)
 
-### E. Enforcement Actions (Clamping & Towing)
-**10. ENFORCEMENT_ACTIONS**
-*Extends `Entities.md: Clamp/Tow Request` and `laspa_technical_doc: 2.7 - 2.12`*
-- `id` (UUID, PK)
-- `violation_id` (UUID, FK -> CUSTOMER_VIOLATIONS.id)
-- `action_type` (ENUM: 'CLAMP', 'TOW', 'IMPOUND')
-- `reference_id` (VARCHAR, Unique)
-- `requested_by` (UUID, FK -> USERS.id)
-- `requested_at` (TIMESTAMP)
-- `status` (ENUM: 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'RELEASED')
-- `payment_status` (ENUM: 'PENDING', 'PAID')
-- `release_date` (TIMESTAMP)
-- `towing_company` (VARCHAR, Optional)
-- `impound_lot_location` (VARCHAR, Optional)
-
-### F. Financials & Disputes
-**11. FINES**
-*Extends `Entities.md: Fines`*
-- `id` (UUID, PK)
-- `violation_id` (UUID, FK -> CUSTOMER_VIOLATIONS.id)
-- `amount` (DECIMAL)
-- `is_paid` (BOOLEAN)
-- `payment_date` (TIMESTAMP)
-
-**12. APPEALS**
-*Extends `Entities.md: Appeals` and `laspa_technical_doc: 2.13`*
-- `id` (UUID, PK)
-- `violation_id` (UUID, FK -> CUSTOMER_VIOLATIONS.id)
-- `user_id` (UUID, FK -> USERS.id)
-- `appeal_reason` (TEXT)
-- `attachments` (JSONB)
-- `status` (ENUM: 'PENDING', 'APPROVED', 'REJECTED')
-- `reviewer_id` (UUID, FK -> USERS.id)
-- `review_notes` (TEXT)
-- `created_at` (TIMESTAMP)
+**10. APPEALS**
+- `id` (INT, PK)
+- `violation_id` (INT, FK -> CUSTOMER_VIOLATIONS.id)
+- `customer_id` (INT, FK -> CUSTOMERS.id)
+- `reviewer_id` (INT, FK -> STAFF.id)
+- `status` (ENUM: AppealStatus)
 
 ## 3. Required Views (Reporting)
 - `VIEW_AVAILABLE_SPACES`: Real-time availability by Zone/Bay.

@@ -10,7 +10,8 @@ Global value sets used across multiple tables to ensure data integrity.
 
 | Enum Name | Values | Description |
 |-----------|--------|-------------|
-| **UserType** | `CUSTOMER`, `ADMIN`, `PARKING_AGENT`, `ENFORCEMENT_AGENT` | Defines roles and permissions of system users. |
+| **UserRole** | `ADMIN`, `ENFORCEMENT_OFFICER`, `ANALYST`, `VIEWER` | Roles for dashboard users (admins/analysts). |
+| **StaffRole** | `ADMIN`, `PARKING_AGENT`, `ENFORCEMENT_AGENT` | Roles for operational staff (agents/officers). |
 | **AccountStatus**| `ACTIVE`, `SUSPENDED` | Indicates if a user is allowed to access the system. |
 | **SlotStatus** | `AVAILABLE`, `OCCUPIED`, `RESERVED`, `OUT_OF_SERVICE` | Real-time status of a specific parking slot. |
 | **TicketStatus** | `ACTIVE`, `COMPLETED`, `EXPIRED`, `CANCELLED` | Lifecycle state of a parking session/ticket. |
@@ -29,37 +30,63 @@ Global value sets used across multiple tables to ensure data integrity.
 ### 1. Identity & Access Management
 
 #### `users` (User)
-Core user entity for all stakeholders.
+Dashboard users (Admins, Analysts).
 - **PK**: `id` (Int)
-- **Unique**: `email`, `customer_reference_id`
+- **Unique**: `email`
 
 | Column | Type | Default | Nullable | Description |
 |--------|------|---------|----------|-------------|
-| `id` | Int | Auto-inc | No | Internal primary key. |
-| `customer_reference_id` | String | | Yes | External reference ID (e.g., from ICELL). |
-| `first_name` | String | | No | User's first name. |
-| `last_name` | String | | No | User's last name. |
+| `id` | Int | Auto-inc | No | Primary key. |
 | `email` | String | | No | Unique login email. |
-| `phone_number` | String | | No | Contact phone number. |
-| `user_type` | UserType | `CUSTOMER` | No | System role. |
-| `account_status`| AccountStatus | `ACTIVE` | No | Account state. |
+| `password_hash` | String | | No | Bcrypt hashed password. |
+| `first_name` | String | | Yes | User's first name. |
+| `last_name` | String | | Yes | User's last name. |
+| `role` | UserRole | `VIEWER` | No | Dashboard role. |
+| `is_active` | Boolean | `true` | No | Account active state. |
 | `created_at` | DateTime | `now()` | No | Creation timestamp. |
-| `updated_at` | DateTime | | No | Auto-update on modification. |
+| `updated_at` | DateTime | | No | Update timestamp. |
+
+#### `staff` (Staff)
+Operational field staff (Officers, Agents).
+- **PK**: `id` (Int)
+- **Unique**: `email`
+
+| Column | Type | Default | Nullable | Description |
+|--------|------|---------|----------|-------------|
+| `id` | Int | Auto-inc | No | Primary key. |
+| `first_name` | String | | No | Staff first name. |
+| `last_name` | String | | No | Staff last name. |
+| `email` | String | | No | Professional email. |
+| `phone_number` | String | | No | Contact number. |
+| `role` | StaffRole | | No | Operational role. |
+| `account_status`| AccountStatus | `ACTIVE` | No | Account state. |
+
+#### `customers` (Customer)
+App users and vehicle owners.
+- **PK**: `id` (Int)
+- **Unique**: `customer_reference_id`, `email`
+
+| Column | Type | Default | Nullable | Description |
+|--------|------|---------|----------|-------------|
+| `id` | Int | Auto-inc | No | Primary key. |
+| `customer_reference_id` | String | | No | External reference (ICELL). |
+| `first_name` | String | | No | Customer first name. |
+| `last_name` | String | | No | Customer last name. |
+| `email` | String | | No | Personal email. |
+| `phone_number` | String | | No | Mobile number. |
 
 #### `vehicles` (Vehicle)
 Vehicles registered by customers.
 - **PK**: `id` (Int)
 - **Unique**: `plate_number`
-- **FK**: `user_id` -> `users.id`
+- **FK**: `customer_id` -> `customers.id`
 
 | Column | Type | Default | Nullable | Description |
 |--------|------|---------|----------|-------------|
 | `id` | Int | Auto-inc | No | Primary key. |
-| `user_id` | Int | | No | Reference to owner. |
-| `plate_number` | String | | No | Plate registration (e.g., "736"). |
-| `plate_code` | String | | Yes | Region code (e.g., "KJA"). |
-| `plate_source` | String | | Yes | Source state (e.g., "Lagos"). |
-| `plate_type` | String | | Yes | Usage type (e.g., "Private"). |
+| `customer_id` | Int | | No | Reference to owner. |
+| `plate_number` | String | | No | Plate registration. |
+| `plate_code` | String | | Yes | Region code. |
 | `is_default` | Boolean | `false` | No | User's primary vehicle. |
 
 ---
@@ -73,7 +100,7 @@ High-level geographic management areas.
 
 | Column | Type | Default | Nullable | Description |
 |--------|------|---------|----------|-------------|
-| `id` | UUID | UUID v4 | No | Primary key. |
+| `id` | Int | Auto-inc | No | Primary key. |
 | `zone_code` | String | | No | Identifier (e.g., "IKJ111"). |
 | `zone_name` | String | | No | Display name (e.g., "Ikeja"). |
 | `geographical_area` | Geometry (Polygon) | | Yes | Spatial boundary for map viz. |
@@ -116,34 +143,38 @@ Individual parking spots.
 Active and historical parking sessions.
 - **PK**: `id` (Int)
 - **Unique**: `transaction_ref`
-- **FK**: `customer_id` -> `users.id`, `vehicle_id` -> `vehicles.id`, `bay_id` -> `parking_bays.id`, `slot_id` -> `parking_slots.id`, `agent_id` -> `users.id`
+- **FK**: `customer_id` -> `customers.id`, `vehicle_id` -> `vehicles.id`, `bay_id` -> `parking_bays.id`, `slot_id` -> `parking_slots.id` (Null), `agent_id` -> `staff.id` (Null)
 
 | Column | Type | Default | Nullable | Description |
 |--------|------|---------|----------|-------------|
-| `transaction_ref` | String | | No | Unique transaction ID (e.g., `P-2025...`). |
-| `amount_paid` | Decimal(10,2) | | No | Total transaction value. |
+| `id` | Int | Auto-inc | No | Internal primary key. |
+| `transaction_ref` | String | | No | Unique transaction ID. |
+| `amount_paid` | Decimal(10,2) | | No | Total value. |
 | `duration_hours` | Int | | No | Purchased time. |
 | `start_time` | DateTime | | No | Session start. |
-| `expiry_time` | DateTime | | No | Calculated expiration time. |
+| `expiry_time` | DateTime | | No | Expiration time. |
 | `status` | TicketStatus | `ACTIVE` | No | Session state. |
+| `payment_method` | PaymentMethod| | No | Payment method used. |
 
 #### `customer_violations` (CustomerViolation)
-Infractions recorded by enforcement officers.
+Infractions recorded by field staff.
 - **PK**: `id` (Int)
 - **Unique**: `reference_id`
+- **FK**: `customer_id` -> `customers.id`, `vehicle_id` -> `vehicles.id`, `violation_type_id` -> `violation_types.id`, `zone_id` -> `parking_zones.id`, `enforcement_officer_id` -> `staff.id`
 
 | Column | Type | Default | Nullable | Description |
 |--------|------|---------|----------|-------------|
+| `id` | Int | Auto-inc | No | Internal primary key. |
 | `reference_id` | String | | No | Violation identifier. |
 | `violation_date` | DateTime | | No | Date of infraction. |
 | `fee_amount` | Decimal(10,2) | | No | Fine amount. |
-| `status` | ViolationStatus | `OUTSTANDING`| No | Current payment/appeal state. |
-| `evidence_images` | Json | | Yes | Array of image URLs. |
+| `status` | ViolationStatus | `OUTSTANDING`| No | Current state. |
+| `evidence_images` | Json | | Yes | Image URLs. |
 
 #### `parking_requests` (ParkingRequest)
 Initial customer requests for parking sessions.
 - **PK**: `id` (Int)
-- **FK**: `customer_id` -> `users.id`, `vehicle_id` -> `vehicles.id`, `zone_id` -> `parking_zones.id`, `bay_id` -> `parking_bays.id`, `slot_id` -> `parking_slots.id`
+- **FK**: `customer_id` -> `customers.id`, `vehicle_id` -> `vehicles.id`, `zone_id` -> `parking_zones.id`, `bay_id` -> `parking_bays.id`, `slot_id` -> `parking_slots.id`
 
 | Column | Type | Default | Nullable | Description |
 |--------|------|---------|----------|-------------|
@@ -151,11 +182,11 @@ Initial customer requests for parking sessions.
 | `customer_id` | Int | | No | Reference to requester. |
 | `vehicle_id` | Int | | No | Vehicle to be parked. |
 | `zone_id` | Int | | Yes | Preferred zone. |
-| `bay_id` | Int | | Yes | Specific bay if applicable. |
-| `slot_id` | Int | | Yes | Specific slot if applicable. |
-| `start_time` | DateTime | | No | Requested start of session. |
+| `bay_id` | Int | | Yes | Specific bay. |
+| `slot_id` | Int | | Yes | Specific slot. |
+| `start_time` | DateTime | | No | Requested start. |
 | `duration_hours` | Int | | No | Requested duration. |
-| `status` | RequestStatus | `PENDING` | No | Request approval state. |
+| `status` | RequestStatus | `PENDING` | No | Approval state. |
 
 ---
 
