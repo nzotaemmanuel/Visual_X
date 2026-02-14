@@ -27,8 +27,15 @@ export function Header() {
         ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email
         : MOCK_STAFF.name;
 
+    const roleMapping: Record<string, string> = {
+        'ADMIN': 'Director of Operations',
+        'ENFORCEMENT_OFFICER': 'Enforcement Officer',
+        'ANALYST': 'Business Analyst',
+        'VIEWER': 'Guest Viewer'
+    };
+
     const displayRole = user
-        ? user.role?.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())
+        ? roleMapping[user.role] || user.role?.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())
         : MOCK_STAFF.role;
 
     const initials = user
